@@ -23,7 +23,6 @@ async def cv2_proceed_callback(client, callback):
         balance = get_user_balance(user_id)
     
     if balance >= CV_PRICE:
-        # anketa2_fsm.finish(user_id) olib tashlandi (ma'lumotlar o'chib ketmasligi uchun)
         anketa2_fsm.update_data(user_id, "cv_lang", lang)
         anketa2_fsm.update_data(user_id, "waiting_for_format", False)
         
@@ -61,4 +60,48 @@ async def cv2_cancel_callback(client, callback):
     cancel_text = i18n.t("payment_cancelled", lang=lang, file="message")
     
     await callback.message.edit_text(cancel_text)
+    await callback.answer()
+
+
+# --- TASDIQLASH (YES) CALLBACK'I (cv2_xato_kb uchun) ---
+@bitik.on_callback_query(filters.regex(r"^anketa2_confirm_yes$"))
+async def anketa2_confirm_yes_callback(client, callback):
+    user_id = callback.from_user.id
+    lang = get_user_lang(user_id)
+    
+    # Balansni tekshirish va keyingi qadamga o'tkazish logikasi
+    if user_id == config.ADMIN_ID:
+        balance = 999999999.0
+    else:
+        balance = get_user_balance(user_id)
+        
+    if balance >= CV_PRICE:
+        anketa2_fsm.update_data(user_id, "cv_lang", lang)
+        text = i18n.t("select_cv_language", lang=lang, file="message")
+        try:
+            success_msg = i18n.t("cv2_balance_enough", lang=lang, file="cv")
+        except:
+            success_msg = "✅ Ma'lumotlar tasdiqlandi. Davom etamiz!"
+            
+        await callback.message.edit_text(success_msg)
+        await callback.message.reply(text, reply_markup=anketa2_lang_keyboard())
+    else:
+        warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm."
+        await callback.message.edit_text(warning_text)
+        await callback.message.reply(
+            i18n.t("pay_select_amount", lang=lang, file="message"),
+            reply_markup=get_amounts_keyboard(lang)
+        )
+    await callback.answer()
+
+
+# --- TAHRIRLASH (EDIT) CALLBACK'I (cv2_xato_kb uchun) ---
+@bitik.on_callback_query(filters.regex(r"^anketa2_confirm_edit$"))
+async def anketa2_confirm_edit_callback(client, callback):
+    user_id = callback.from_user.id
+    lang = get_user_lang(user_id)
+    
+    # Ma'lumotlarni qaytadan kiritishni boshlash
+    await callback.message.edit_text("🔄 Ma'lumotlarni qaytadan tahrirlash boshlandi. Iltimos, ma'lumotlarni qaytadan kiriting:")
+    # Bu yerda birinchi savolga yoki boshlang'ich holatga qaytarish amallarini yozishingiz mumkin
     await callback.answer()
