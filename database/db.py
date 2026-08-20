@@ -1,12 +1,19 @@
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+def get_connection():
+    """PostgreSQL bazasiga sinxron ulanishni qaytarish"""
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return conn
+
 def init_db():
-    """Jadvalni yaratish va yangi ustun qo'shish"""
+    """Jadvalni yaratish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        # Eski xato jadvalni butunlay o'chirib, yangidan ochish uchun:
-        cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
-        
-        # PostgreSQL sintaksisiga mos jadval yaratish
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
