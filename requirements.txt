@@ -5,5 +5,5 @@ pdfkit
 google-genai
 fastapi
 uvicorn
-opencv-python-headless
+opencv-python>=4.5.0
 psycopg2-binary
