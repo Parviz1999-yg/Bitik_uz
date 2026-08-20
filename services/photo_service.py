@@ -17,12 +17,14 @@ def crop_image_3x4(input_path: str) -> str:
     img_h, img_w = img.shape[:2]
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
+    faces = []
     try:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        face_cascade = cv2.CascadeClassifier(cascade_path)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 5)
-    except Exception:
-        faces = []
+        if os.path.exists(cascade_path):
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    except Exception as e:
+        print(f"Yuzni aniqlashda ogohlantirish: {e}")
 
     if len(faces) > 0:
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
@@ -39,7 +41,15 @@ def crop_image_3x4(input_path: str) -> str:
         y2 = min(img_h, y1 + box_h)
         
         cropped = img[y1:y2, x1:x2]
+        
+        # Agar kesilgan qism yaroqsiz bo'lsa, proporsiya bo'yicha kesishga o'tamiz
+        if cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
+            cropped = None
     else:
+        cropped = None
+
+    # Agar yuz topilmagan bo'lsa yoki kesishda xatolik bo'lsa, markazdan proporsional kesamiz
+    if cropped is None:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
             new_w = int(img_h * target_ratio)
@@ -49,6 +59,10 @@ def crop_image_3x4(input_path: str) -> str:
             new_h = int(img_w / target_ratio)
             offset = (img_h - new_h) // 2
             cropped = img[offset:offset + new_h, :]
+
+    # Xavfsizlik uchun o'lchamni tekshiramiz
+    if cropped is None or cropped.size == 0:
+        return input_path
 
     cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
 
@@ -69,7 +83,8 @@ async def process_user_photo(client, message):
         try:
             cropped_path = crop_image_3x4(photo_path)
             target_path = cropped_path if os.path.exists(cropped_path) else photo_path
-        except Exception:
+        except Exception as e:
+            print(f"Rasm kesish funksiyasida xato: {e}")
             target_path = photo_path
 
         # Rasm yo'lini FSM ga saqlaymiz (docx, pdf va preview uchun)[cite: 6]

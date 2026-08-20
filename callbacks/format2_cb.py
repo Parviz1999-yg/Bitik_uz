@@ -1,6 +1,7 @@
 # callbacks/format2_cb.py
 import os
 from pyrogram.errors import MessageNotModified
+import config  # <--- Config import qilindi
 from services.localization import i18n
 from database.users_repo import get_user_balance, update_balance
 from keyboards.payment_kb import get_amounts_keyboard
@@ -10,10 +11,15 @@ CV_PRICE = 5000  # 2-anketa uchun narx
 async def universal_format2_callback(client, callback, prefix, translation_file, doc_func, pdf_func, fsm_service):
     user_id = callback.from_user.id
     
-    # Xavfsiz tarzda foydalanuvchi tilini va balansini aniqlaymiz
+    # Xavfsiz tarzda foydalanuvchi tilini aniqlaymiz
     user_data = fsm_service.get_data(user_id) or {}
     lang = user_data.get("cv_lang", "uz")
-    balance = get_user_balance(user_id)
+    
+    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB OLISH
+    if user_id == config.ADMIN_ID:
+        balance = 999999999.0
+    else:
+        balance = get_user_balance(user_id)
     
     format_type = callback.data.split("_")[-1]  # pdf yoki docx
     
@@ -40,8 +46,10 @@ async def universal_format2_callback(client, callback, prefix, translation_file,
         await callback.answer()
         return
 
-    # 2. Balansdan 5000 so'm yechib olamiz
-    update_balance(user_id, -CV_PRICE)
+    # 2. Balansdan pul yechish (Faqat oddiy foydalanuvchilar uchun)
+    if user_id != config.ADMIN_ID:
+        update_balance(user_id, -CV_PRICE)
+        
     await callback.answer()
     
     fsm_service.update_data(user_id, "waiting_for_format", False)
