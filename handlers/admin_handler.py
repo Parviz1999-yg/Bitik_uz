@@ -2,11 +2,14 @@
 from pyrogram import filters
 from bot import bitik
 import config
+from services.channel_service import enforce_subscription
 from services.localization import i18n
 from database.users_repo import set_admin, get_all_users_count, get_user_lang, get_connection
 
 @bitik.on_message(filters.command(["admin", "setadmin", "tolovlar"]))
 async def admin_commands(client, message):
+    if not await enforce_subscription(client, message):
+        return
     if not message or not message.from_user:
         return
         

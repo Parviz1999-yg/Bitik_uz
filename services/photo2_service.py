@@ -30,14 +30,16 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
     if len(faces) > 0:
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
         
-        box_h = int(h * 2.5)
+        # 3x4 standartiga mos ravishda proporsiyani to'g'rilaymiz (2.7 barobar)
+        box_h = int(h * 2.7)
         box_w = int(box_h * target_ratio)
         
         cx = x + w // 2
-        cy = y + h // 2 - int(h * 0.15)
+        # Markazni yuz va yelka muvozanatlash uchun biroz pastroqqa qo'shamiz
+        cy = y + h // 2 + int(h * 0.1)
         
         x1 = cx - box_w // 2
-        y1 = cy - box_h // 2
+        y1 = cy - int(box_h * 0.4)  # Bosh Tepasi kesilmasligi uchun
         x2 = x1 + box_w
         y2 = y1 + box_h
             

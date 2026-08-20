@@ -5,11 +5,14 @@ from services.payment import PaymentService
 from database.users_repo import get_user_lang
 from services.localization import i18n
 from keyboards.payment_kb import get_amounts_keyboard, get_payment_methods_keyboard
+from services.channel_service import enforce_subscription
 
 user_invoices = {}
 
 @bitik.on_message(filters.command("buy"))
 async def buy_command(client, message):
+    if not await enforce_subscription(client, message):
+        return
     user_id = message.from_user.id
     lang = get_user_lang(user_id)
     
@@ -21,6 +24,8 @@ async def buy_command(client, message):
 
 @bitik.on_callback_query(filters.regex(r"^pay_amt_(\d+)"))
 async def select_amount_callback(client, callback_query):
+    if not await enforce_subscription(client, message):
+        return
     amount = int(callback_query.data.split("_")[2])
     user_id = callback_query.from_user.id
     lang = get_user_lang(user_id)
@@ -39,6 +44,8 @@ async def select_amount_callback(client, callback_query):
 
 @bitik.on_callback_query(filters.regex(r"^method_clickterm_(\d+)"))
 async def click_terminal_payment(client, callback_query):
+    if not await enforce_subscription(client, message):
+        return
     amount = int(callback_query.data.split("_")[2])
     amount_tiyin = PaymentService.format_amount_to_tiyin(amount)
     

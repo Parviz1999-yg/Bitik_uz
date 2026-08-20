@@ -6,6 +6,8 @@ from database.users_repo import get_user_lang
 from services.localization import i18n
 from config import GEMINI_KEY
 
+from services.channel_service import enforce_subscription
+
 # Gemini mijozini sozlash
 client_ai = genai.Client(api_key=GEMINI_KEY)
 
@@ -18,6 +20,8 @@ user_chats = {}
 # 1. /ai komandasi - Suhbatni boshlash uchun
 @bitik.on_message(filters.command("ai"))
 async def start_ai_chat(client, message):
+    if not await enforce_subscription(client, message):
+        return
     if not message or not message.from_user:
         return
     user_id = message.from_user.id
@@ -30,6 +34,8 @@ async def start_ai_chat(client, message):
 # 2. AI bilan muloqot qilish uchun matn handler'i
 @bitik.on_message(filters.text & ~filters.command(["start", "admin", "tolovlar", "buy", "help", "setadmin", "create_cv", "create_cv2", "language", "ai", "balans"]))
 async def handle_ai_chat(client, message):
+    if not await enforce_subscription(client, message):
+        return
     if not message or not message.from_user:
         return
         

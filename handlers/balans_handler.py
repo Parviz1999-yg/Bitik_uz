@@ -1,7 +1,7 @@
 import sys
 import os
 
-
+from services.channel_service import enforce_subscription
 
 from pyrogram import filters
 from bot import bitik
@@ -11,6 +11,8 @@ from services.localization import i18n
 
 @bitik.on_message(filters.command("balans"))
 async def balance_command(client, message):
+    if not await enforce_subscription(client, message):
+        return
     user_id = message.from_user.id
     balance = get_user_balance(user_id)  
     points = get_user_points(user_id)
