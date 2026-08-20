@@ -75,7 +75,17 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
 
     # 5. PDF YARATISH (Avtomatikani aniqlash)
     try:
-        wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+        # Avval environment variable yoki tizimdan qidiramiz
+        wkhtmltopdf_path = os.getenv("WKHTMLTOPDF_PATH") or shutil.which("wkhtmltopdf")
+        
+        # Railway / Linux serverlari uchun standart yo'llarni tekshiramiz
+        if not wkhtmltopdf_path:
+            for path in ['/usr/bin/wkhtmltopdf', '/usr/local/bin/wkhtmltopdf']:
+                if os.path.exists(path):
+                    wkhtmltopdf_path = path
+                    break
+                    
+        # Windows uchun standart yo'l
         if not wkhtmltopdf_path and os.path.exists(r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'):
             wkhtmltopdf_path = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
             

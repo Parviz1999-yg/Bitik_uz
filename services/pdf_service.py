@@ -93,7 +93,11 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
         if not wkhtmltopdf_path:
             wkhtmltopdf_path = shutil.which("wkhtmltopdf")
             
-        # Agar topilmasa va Windows'da bo'lsangiz, standart yo'lni tekshiramiz[cite: 5]
+        # Railway / Linux tizimlari uchun standart yo'lni tekshiramiz
+        if not wkhtmltopdf_path and os.path.exists('/usr/bin/wkhtmltopdf'):
+            wkhtmltopdf_path = '/usr/bin/wkhtmltopdf'
+            
+        # Agar topilmasa va Windows'da bo'lsangiz, standart yo'lni tekshiramiz
         if not wkhtmltopdf_path and os.path.exists(r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'):
             wkhtmltopdf_path = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
             
