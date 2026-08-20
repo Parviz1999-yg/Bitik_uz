@@ -17,9 +17,15 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
     img_h, img_w = img.shape[:2]
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
-    face_cascade = cv2.CascadeClassifier(cascade_path)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    faces = []
+    try:
+        cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+        if os.path.exists(cascade_path):
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            if not face_cascade.empty():
+                faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+    except Exception as e:
+        print(f"Yuzni aniqlashda xatolik (e'tiborsiz qoldirildi): {e}")
 
     if len(faces) > 0:
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
@@ -34,25 +40,18 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
         y1 = cy - box_h // 2
         x2 = x1 + box_w
         y2 = y1 + box_h
-        
-        if x1 < 0:
-            x2 -= x1
-            x1 = 0
-        if y1 < 0:
-            y2 -= y1
-            y1 = 0
-        if x2 > img_w:
-            x1 -= (x2 - img_w)
-            x2 = img_w
-        if y2 > img_h:
-            y1 -= (y2 - img_h)
-            y2 = img_h
             
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(img_w, x2), min(img_h, y2)
         
         cropped = img[y1:y2, x1:x2]
+        if cropped.size == 0:
+            cropped = None
     else:
+        cropped = None
+
+    # Agar yuz topilmasa yoki kesishda xato bo'lsa, markazdan kesamiz
+    if cropped is None:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
             new_w = int(img_h * target_ratio)
@@ -62,6 +61,9 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
             new_h = int(img_w / target_ratio)
             offset = (img_h - new_h) // 2
             cropped = img[offset:offset + new_h, :]
+
+    if cropped is None or cropped.size == 0:
+        return input_path
 
     cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
 
@@ -87,10 +89,10 @@ async def process_user_photo_anketa2(client, message):
         anketa2_fsm.update_data(user_id, "user_photo", cropped_path)
         anketa2_fsm.update_data(user_id, "rasm", cropped_path)
         
-        # State'ni tozalaymiz (savollar va rasm bosqichi tugadi)
+        # State'ni tozalaymiz (savollar va rasm bosqichi tugadi)[cite: 6]
         anketa2_fsm.set_state(user_id, None)
         
-        # FORMATGA O'TISH O'RNIGA PREVIEW (TASDIQLASH/TAHRIRLASH) OYNASINI CHAQIRAMIZ:
+        # FORMATGA O'TISH O'RNIGA PREVIEW OYNASINI CHAQIRAMIZ:[cite: 6]
         await send_cv2_preview(client, message, user_id, lang)
         
     except Exception as e:

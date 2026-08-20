@@ -1,11 +1,9 @@
 import os
 import re
+import shutil  # <--- Shu yer qo'shildi
 import pdfkit
 
 def link_callback(uri, rel):
-    """
-    pdfkit yoki shablon uchun resurslar yo'lini to'g'rilashga yordam beradi.
-    """
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
     if "fonts" in uri or "templates" in uri:
@@ -47,10 +45,7 @@ def get_output_path(user_id: any, prefix: str = "cv", ext: str = "pdf") -> str:
     return output_path
 
 def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> bool:
-    """
-    Foydalanuvchi ma'lumotlari asosida HTML shablonni to'ldirib, pdfkit yordamida PDF yaratadi.
-    """
-    # 1. Shablonni topamiz
+    # 1. Shablonni topamiz[cite: 7]
     template_path = get_template_path(lang, "anketa.html")
     if not template_path:
         return False
@@ -58,16 +53,16 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
     with open(template_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
-    # 2. Rasmni HTML formatga o'tkazish
+    # 2. Rasmni HTML formatga o'tkazish[cite: 7]
     data["rasm"] = get_user_photo_html(data)
 
-    # 3. Ma'lumotlarni regex orqali almashtirish
+    # 3. Ma'lumotlarni regex orqali almashtirish[cite: 7]
     for key, value in data.items():
         val_str = str(value or "")
         pattern = r"\{\{\s*" + re.escape(key) + r"\s*\}\}"
         html_content = re.sub(pattern, lambda m: val_str, html_content)
 
-    # 4. Qarindoshlar ro'yxatini render qilish
+    # 4. Qarindoshlar ro'yxatini render qilish[cite: 7]
     qarindoshlar_html = ""
     raw_qarindoshlar = data.get("qarindoshlar_list", []) or data.get("qarindoshlar", [])
     for q in raw_qarindoshlar:
@@ -84,16 +79,22 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
     qarindosh_pattern = r"\{\{\s*qarindoshlar\s*\}\}"
     html_content = re.sub(qarindosh_pattern, lambda m: qarindoshlar_html, html_content)
 
-    # 5. Chiqish fayl yo'lini aniqlash
+    # 5. Chiqish fayl yo'lini aniqlash[cite: 7]
     if not output_pdf_path:
         user_id = data.get("tg_id") or data.get("user_id", "cv")
         output_pdf_path = get_output_path(user_id, prefix="cv", ext="pdf")
 
-    # 6. PDF YARATISH
-    path_to_wkhtmltopdf = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
-    
+    # 6. PDF YARATISH (Avtomatikani aniqlash)
     try:
-        config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
+        # Tizimdan wkhtmltopdf ni avtomatik topamiz (Linux va Windows uchun umumiy)
+        wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+        
+        # Agar topilmasa va Windows'da bo'lsangiz, standart yo'lni tekshiramiz
+        if not wkhtmltopdf_path and os.path.exists(r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'):
+            wkhtmltopdf_path = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
+            
+        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path) if wkhtmltopdf_path else None
+        
         pdfkit.from_string(
             html_content, 
             output_pdf_path, 

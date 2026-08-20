@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import pdfkit
 
 def link_callback(uri, rel):
@@ -72,11 +73,14 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
         user_id = data.get("tg_id") or data.get("user_id", "anketa2")
         output_pdf_path = get_output_path(user_id, prefix="anketa2", ext="pdf")
 
-    # 5. PDF YARATISH
-    path_to_wkhtmltopdf = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
-    
+    # 5. PDF YARATISH (Avtomatikani aniqlash)
     try:
-        config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
+        wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+        if not wkhtmltopdf_path and os.path.exists(r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'):
+            wkhtmltopdf_path = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
+            
+        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path) if wkhtmltopdf_path else None
+        
         pdfkit.from_string(
             html_content, 
             output_pdf_path, 
