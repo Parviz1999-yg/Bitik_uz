@@ -52,7 +52,7 @@ async def handle_ai_chat(client, message):
     try:
         # Agar foydalanuvchining chat sessiyasi hali yaratilmagan bo'lsa, ochamiz
         if user_id not in user_chats:
-            user_chats[user_id] = client_ai.chats.create(model='gemini-2.5-flash')
+            user_chats[user_id] = client_ai.chats.create(model='gemini-3.1-flash-lite')
         
         # Chat orqali xabar yuborish (bu AFC xatoligini yo'qotadi va suhbat tarixini saqlaydi)
         chat = user_chats[user_id]
