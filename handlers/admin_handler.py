@@ -27,7 +27,7 @@ async def admin_commands(client, message):
         text = (
             f"👑 **Admin Paneli**\n\n"
             f"👥 Jami foydalanuvchilar: {user_count}\n\n"
-            f"💡 Balans to'ldirishlar tarixini ko'rish uchun /payments buyrug'ini yuboring."
+            f"💡 Balans to'ldirishlar tarixini ko'rish uchun /tolovlar buyrug'ini yuboring."
         )
         await message.reply(text)
 

@@ -28,7 +28,7 @@ async def start_ai_chat(client, message):
     await message.reply(i18n.t("ai_start", lang=lang, file="message"))
 
 # 2. AI bilan muloqot qilish uchun matn handler'i
-@bitik.on_message(filters.text & ~filters.command(["start", "admin", "buy", "help", "setadmin", "create_cv", "create_cv2", "language", "ai", "balans"]))
+@bitik.on_message(filters.text & ~filters.command(["start", "admin", "tolovlar", "buy", "help", "setadmin", "create_cv", "create_cv2", "language", "ai", "balans"]))
 async def handle_ai_chat(client, message):
     if not message or not message.from_user:
         return
