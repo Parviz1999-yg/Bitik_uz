@@ -10,12 +10,15 @@ def get_connection():
     return conn
 
 def init_db():
-    """Jadvalni yaratish"""
+    """Jadvalni to'liq yangidan yaratish va cheklovni to'g'rilash"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
+        # DIQAT: Eski jadvalni butunlay o'chirib yuboramiz va to'g'ri cheklov bilan qaytadan ochamiz
+        cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
+        
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE users (
                 id SERIAL PRIMARY KEY,
                 tg_id BIGINT NOT NULL UNIQUE,
                 username TEXT,
