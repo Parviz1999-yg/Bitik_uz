@@ -9,7 +9,7 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
 
     target_w = 350
     target_h = 450
-    target_ratio = 3.5 / 4.5
+    target_ratio = 3.5 / 4.5  # 3:4 nisbat
 
     img = cv2.imread(input_path)
     if img is None:
@@ -23,36 +23,39 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         if os.path.exists(cascade_path):
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
     except Exception as e:
         print(f"Yuzni aniqlashda ogohlantirish: {e}")
 
     cropped = None
 
     if len(faces) > 0:
+        # Topilgan eng yirik yuzni olamiz
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
         
-        # PASPORT FORMATI UCHUN KONTROL: 
-        # Yuz topilgach, kadrni kattaroq qilamiz (bo'yi va enini kengaytiramiz)
-        # 3.8 - balandlik koeffitsiyenti (bosh va yelka yaxshi sig'ishi uchun)
-        box_h = int(h * 3.8)  
+        # PASPORT STANDARTI BO'YICHA HISOB-KITOB:
+        # Yuzning o'rtasi (markazi)
+        face_center_x = x + w // 2
+        face_center_y = y + h // 2
+        
+        # 3x4 proporsiyaga mos keladigan umumiy kadr balandligini yuz o'lchamiga qarab belgilaymiz.
+        # Odatda pasport rasvida yuz kadr balandligining taxminan 40-50% ini egallashi kerak.
+        box_h = int(h * 2.8)  # Yuz hajmiga nisbatan optimal kadr balandligi
         box_w = int(box_h * target_ratio)
         
-        cx = x + w // 2
-        cy = y + h // 2
-        
-        # Boshning tepasi kesilib ketmasligi uchun yuqoriroqdan boshlaymiz (0.45 qismi tepaga qoladi)
-        x1 = cx - box_w // 2
-        y1 = cy - int(box_h * 0.42)  
+        # Kadrning chap/o'ng va tepa/past koordinatalari
+        # Yuz kadrning biroz yuqoriroq qismida joylashishi kerak (bosh tepasi sig'ishi uchun)
+        x1 = face_center_x - box_w // 2
+        y1 = y - int(h * 0.7)  # Yuzning tepasidan (peshonadan) yuqoriroqdan boshlaymiz
         x2 = x1 + box_w
         y2 = y1 + box_h
-            
-        # Agar kadr rasmdan chiqib ketsa, uni rasm chegarasiga moslab suramiz
+        
+        # Agar kadr rasm chegarasidan tashqariga chiqib ketsa, uni ichkariga suramiz (siljitamiz)
         if x1 < 0:
-            x2 -= x1
+            x2 += abs(x1)
             x1 = 0
         if y1 < 0:
-            y2 -= y1
+            y2 += abs(y1)
             y1 = 0
         if x2 > img_w:
             x1 -= (x2 - img_w)
@@ -61,14 +64,14 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
             y1 -= (y2 - img_h)
             y2 = img_h
             
-        # Qayta tekshirib kesib olamiz
+        # So'nggi chegaralarni qat'iy nazorat qilamiz
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(img_w, x2), min(img_h, y2)
         
         if x2 > x1 and y2 > y1:
             cropped = img[y1:y2, x1:x2]
 
-    # Agar yuz umuman topilmasa, rasmning o'rtasidan 3x4 nisbatda kesib olamiz
+    # Agar yuz umuman topilmasa, rasmning markazidan to'g'ridan-to'g'ri 3x4 proporsiyada qirqamiz
     if cropped is None or cropped.size == 0:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
@@ -77,21 +80,19 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
             cropped = img[:, offset:offset + new_w]
         else:
             new_h = int(img_w / target_ratio)
-            offset = max(0, int((img_h - new_h) * 0.2))
+            offset = max(0, int((img_h - new_h) * 0.15))
             cropped = img[offset:offset + new_h, :]
 
     if cropped is None or cropped.size == 0:
         return input_path
 
+    # Yakuniy o'lchamga keltiramiz (350x450 piksel)
     cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
 
     output_path = input_path.replace(".", "_cropped.")
     cv2.imwrite(output_path, cropped)
 
     return output_path
-
-def crop_image_3x4_anketa2(input_path: str) -> str:
-    return crop_image_3x4(input_path)
 
 async def process_user_photo_anketa2(client, message):
     user_id = message.from_user.id
