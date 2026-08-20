@@ -1,6 +1,6 @@
 import os
 import re
-import shutil  # <--- Shu yer qo'shildi
+import shutil
 import pdfkit
 
 def link_callback(uri, rel):
@@ -45,7 +45,7 @@ def get_output_path(user_id: any, prefix: str = "cv", ext: str = "pdf") -> str:
     return output_path
 
 def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> bool:
-    # 1. Shablonni topamiz[cite: 7]
+    # 1. Shablonni topamiz[cite: 5]
     template_path = get_template_path(lang, "anketa.html")
     if not template_path:
         return False
@@ -53,16 +53,16 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
     with open(template_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
-    # 2. Rasmni HTML formatga o'tkazish[cite: 7]
+    # 2. Rasmni HTML formatga o'tkazish[cite: 5]
     data["rasm"] = get_user_photo_html(data)
 
-    # 3. Ma'lumotlarni regex orqali almashtirish[cite: 7]
+    # 3. Ma'lumotlarni regex orqali almashtirish[cite: 5]
     for key, value in data.items():
         val_str = str(value or "")
         pattern = r"\{\{\s*" + re.escape(key) + r"\s*\}\}"
         html_content = re.sub(pattern, lambda m: val_str, html_content)
 
-    # 4. Qarindoshlar ro'yxatini render qilish[cite: 7]
+    # 4. Qarindoshlar ro'yxatini render qilish[cite: 5]
     qarindoshlar_html = ""
     raw_qarindoshlar = data.get("qarindoshlar_list", []) or data.get("qarindoshlar", [])
     for q in raw_qarindoshlar:
@@ -79,31 +79,44 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
     qarindosh_pattern = r"\{\{\s*qarindoshlar\s*\}\}"
     html_content = re.sub(qarindosh_pattern, lambda m: qarindoshlar_html, html_content)
 
-    # 5. Chiqish fayl yo'lini aniqlash[cite: 7]
+    # 5. Chiqish fayl yo'lini aniqlash[cite: 5]
     if not output_pdf_path:
         user_id = data.get("tg_id") or data.get("user_id", "cv")
         output_pdf_path = get_output_path(user_id, prefix="cv", ext="pdf")
 
-    # 6. PDF YARATISH (Avtomatikani aniqlash)
+    # 6. PDF YARATISH (Environment variables va tizimdan qidirish)
     try:
-        # Tizimdan wkhtmltopdf ni avtomatik topamiz (Linux va Windows uchun umumiy)
-        wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+        # Avval .env / environment variables dan qidiramiz
+        wkhtmltopdf_path = os.getenv("WKHTMLTOPDF_PATH")
         
-        # Agar topilmasa va Windows'da bo'lsangiz, standart yo'lni tekshiramiz
+        # Agar u yerda bo'lmasa, tizimdan (shutil.which) qidiramiz
+        if not wkhtmltopdf_path:
+            wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+            
+        # Agar topilmasa va Windows'da bo'lsangiz, standart yo'lni tekshiramiz[cite: 5]
         if not wkhtmltopdf_path and os.path.exists(r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'):
             wkhtmltopdf_path = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
             
-        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path) if wkhtmltopdf_path else None
-        
-        pdfkit.from_string(
-            html_content, 
-            output_pdf_path, 
-            configuration=config, 
-            options={
-                'encoding': "UTF-8",
-                'enable-local-file-access': None
-            }
-        )
+        if wkhtmltopdf_path:
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+            pdfkit.from_string(
+                html_content, 
+                output_pdf_path, 
+                configuration=config, 
+                options={
+                    'encoding': "UTF-8",
+                    'enable-local-file-access': None
+                }
+            )
+        else:
+            pdfkit.from_string(
+                html_content, 
+                output_pdf_path, 
+                options={
+                    'encoding': "UTF-8",
+                    'enable-local-file-access': None
+                }
+            )
         return True
     except Exception as e:
         print(f"PDF yaratishda xatolik: {e}")
