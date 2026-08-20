@@ -50,15 +50,9 @@ def crop_image_3x4(input_path: str) -> str:
             cropped = None
     else:
         cropped = None
-        
-        # Agar kesilgan qism yaroqsiz bo'lsa, proporsiya bo'yicha kesishga o'tamiz
-        if cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
-            cropped = None
-    else:
-        cropped = None
 
     # Agar yuz topilmagan bo'lsa yoki kesishda xatolik bo'lsa, markazdan proporsional kesamiz
-    if cropped is None:
+    if cropped is None or cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
             new_w = int(img_h * target_ratio)
@@ -96,10 +90,10 @@ async def process_user_photo(client, message):
             print(f"Rasm kesish funksiyasida xato: {e}")
             target_path = photo_path
 
-        # Rasm yo'lini FSM ga saqlaymiz (docx, pdf va preview uchun)[cite: 6]
+        # Rasm yo'lini FSM ga saqlaymiz (docx, pdf va preview uchun)[cite: 7]
         fsm.update_data(user_id, "rasm", target_path)
         
-        # State ni tozalaymiz va Preview ga o'tamiz[cite: 6]
+        # State ni tozalaymiz va Preview ga o'tamiz[cite: 7]
         fsm.set_state(user_id, None)
         await send_cv_preview(client, message, user_id, lang)
         

@@ -5,7 +5,7 @@ from handlers.cv2_handler import send_cv2_preview
 import cv2
 import os
 
-def crop_image_3x4_anketa2(input_path: str) -> str:
+def crop_image_3x4(input_path: str) -> str:
     target_w = 350
     target_h = 450
     target_ratio = 3.5 / 4.5
@@ -19,13 +19,12 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
     
     faces = []
     try:
-        cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         if os.path.exists(cascade_path):
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            if not face_cascade.empty():
-                faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 5)
     except Exception as e:
-        print(f"Yuzni aniqlashda xatolik (e'tiborsiz qoldirildi): {e}")
+        print(f"Yuzni aniqlashda ogohlantirish: {e}")
 
     if len(faces) > 0:
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
@@ -52,8 +51,8 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
     else:
         cropped = None
 
-    # Agar yuz topilmasa yoki kesishda xato bo'lsa, markazdan kesamiz
-    if cropped is None:
+    # Agar yuz topilmagan bo'lsa yoki kesishda xatolik bo'lsa, markazdan proporsional kesamiz
+    if cropped is None or cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
             new_w = int(img_h * target_ratio)
@@ -64,16 +63,14 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
             offset = (img_h - new_h) // 2
             cropped = img[offset:offset + new_h, :]
 
+    # Xavfsizlik uchun o'lchamni tekshiramiz
     if cropped is None or cropped.size == 0:
         return input_path
 
     cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
 
-    output_path = input_path.replace(".", "_anketa2_cropped.")
+    output_path = input_path.replace(".", "_cropped.")
     cv2.imwrite(output_path, cropped)
-
-    if os.path.exists(input_path) and input_path != output_path:
-        os.remove(input_path)
 
     return output_path
 
