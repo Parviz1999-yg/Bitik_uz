@@ -1,6 +1,7 @@
 # callbacks/cv_davom_cb.py
 from pyrogram import filters
 from bot import bitik
+import config  # <--- Config import qilindi
 from services.cv_fsm import fsm
 from keyboards.cv_kb import cv_lang_keyboard
 from keyboards.payment_kb import get_amounts_keyboard
@@ -14,7 +15,12 @@ CV_PRICE = 5000  # Ma'lumotnoma yaratish narxi
 async def cv_proceed_callback(client, callback):
     user_id = callback.from_user.id
     lang = get_user_lang(user_id)
-    balance = get_user_balance(user_id)
+    
+    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB OLISH
+    if user_id == config.ADMIN_ID:
+        balance = 999999999.0
+    else:
+        balance = get_user_balance(user_id)
     
     if balance >= CV_PRICE:
         fsm.finish(user_id)
@@ -22,15 +28,22 @@ async def cv_proceed_callback(client, callback):
         fsm.update_data(user_id, "waiting_for_format", False)
         
         text = i18n.t("select_cv_language", lang=lang, file="message")
-        success_msg = i18n.t("cv2_balance_enough", lang=lang, file="cv")
+        try:
+            success_msg = i18n.t("cv2_balance_enough", lang=lang, file="cv")
+        except:
+            success_msg = "✅ Balansingiz yetarli. Davom etamiz!"
         
         await callback.message.edit_text(success_msg)
         await callback.message.reply(text, reply_markup=cv_lang_keyboard(prefix="cv"))
     else:
-        warning_text = i18n.t("cv2_balance_low", lang=lang, file="cv").format(
-            price=f"{CV_PRICE:,.0f}",
-            balance=f"{balance:,.0f}"
-        )
+        try:
+            warning_text = i18n.t("cv2_balance_low", lang=lang, file="cv").format(
+                price=f"{CV_PRICE:,.0f}",
+                balance=f"{balance:,.0f}"
+            )
+        except:
+            warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm, Sizda: {balance:,.0f} so'm."
+            
         await callback.message.edit_text(warning_text)
         await callback.message.reply(
             i18n.t("pay_select_amount", lang=lang, file="message"),

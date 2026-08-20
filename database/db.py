@@ -14,7 +14,7 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        # DROP TABLE olib tashlandi, shuning uchun ma'lumotlar har safar o'chib ketmaydi
+        # 1. users jadvali
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -32,6 +32,17 @@ def init_db():
                 last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # 2. payments jadvali (To'lovlar tarixi uchun)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payments (
+                id SERIAL PRIMARY KEY,
+                tg_id BIGINT NOT NULL,
+                amount REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
         conn.commit()
     finally:
         cursor.close()
