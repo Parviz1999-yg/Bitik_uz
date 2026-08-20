@@ -6,7 +6,7 @@ from services.cv2_fsm import anketa2_fsm, Anketa2State
 from keyboards.cv2_kb import anketa2_lang_keyboard
 from keyboards.cv2_xato_kb import cv2_xato_keyboard
 from keyboards.payment_kb import get_amounts_keyboard
-from keyboards.cv2_format_kb import get_format_keyboard  # Agar format klaviaturasi alohida bo'lsa
+from keyboards.format2_kb import get_format_keyboard
 from services.localization import i18n
 from database.users_repo import get_user_lang, get_user_balance
 
