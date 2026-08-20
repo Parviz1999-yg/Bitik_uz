@@ -1,5 +1,7 @@
 import os
 
+print("Railway'dagi mavjud kalitlar:", list(os.environ.keys()))
+
 # Xavfsiz o'qish (agar bo'sh bo'lsa 0 yoki bo'sh qator oladi)
 api_id_val = os.environ.get("API_ID")
 API_ID = int(api_id_val) if api_id_val else 0
