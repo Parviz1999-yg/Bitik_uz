@@ -12,11 +12,17 @@ client_ai = genai.Client(api_key=GEMINI_KEY)
 # Har bir userning oxirgi so'rov vaqtini saqlash uchun lug'at
 user_last_request = {}
 
+# Har bir user uchun chat sessiyalarini saqlash (suhbat tarixi uchun)
+user_chats = {}
+
 # 1. /ai komandasi - Suhbatni boshlash uchun
 @bitik.on_message(filters.command("ai"))
 async def start_ai_chat(client, message):
     user_id = message.from_user.id
     lang = get_user_lang(user_id)
+    # /ai bosilganda oldingi chat tarixini tozalab, yangidan boshlaymiz
+    if user_id in user_chats:
+        del user_chats[user_id]
     await message.reply(i18n.t("ai_start", lang=lang, file="message"))
 
 # 2. AI bilan muloqot qilish uchun matn handler'i
@@ -26,15 +32,15 @@ async def handle_ai_chat(client, message):
     lang = get_user_lang(user_id)
     text = message.text.strip()
     
-    # Rate-limit (1 daqiqada 2 ta so'rov) tekshiruvi
+    # Rate-limit (30 sekundlik) tekshiruvi
     current_time = time.time()
     last_time = user_last_request.get(user_id, 0)
     
     if current_time - last_time < 30:
         remaining = int(30 - (current_time - last_time))
         raw_text = i18n.t("ai_time", lang=lang, file="message")
-        text = raw_text.format(remaining=remaining)
-        await message.reply(text)
+        limit_text = raw_text.format(remaining=remaining)
+        await message.reply(limit_text)
         return
 
     # Vaqtni yangilaymiz
@@ -44,14 +50,19 @@ async def handle_ai_chat(client, message):
     processing_msg = await message.reply(i18n.t("ai_await", lang=lang, file="message"))
     
     try:
-        # Gemini API ga so'rov yuborish
-        response = client_ai.models.generate_content(
-            model='gemini-3.1-flash-lite',
-            contents=text,
-        )
+        # Agar foydalanuvchining chat sessiyasi hali yaratilmagan bo'lsa, ochamiz
+        if user_id not in user_chats:
+            user_chats[user_id] = client_ai.chats.create(model='gemini-2.5-flash')
+        
+        # Chat orqali xabar yuborish (bu AFC xatoligini yo'qotadi va suhbat tarixini saqlaydi)
+        chat = user_chats[user_id]
+        response = chat.send_message(text)
         
         answer = response.text
         await processing_msg.edit_text(answer)
         
     except Exception as e:
+        # Xatolik chiqsa chat sessiyasini tozalaymiz
+        if user_id in user_chats:
+            del user_chats[user_id]
         await processing_msg.edit_text(f"❌ Xatolik yuz berdi: {e}")
