@@ -1,4 +1,4 @@
-# callbacks/cv2_davom_cb.py
+# callbacks/cv2_xato_cb.py
 from pyrogram import filters
 from bot import bitik
 import config
@@ -6,7 +6,7 @@ from services.cv2_fsm import anketa2_fsm, Anketa2State
 from keyboards.cv2_kb import anketa2_lang_keyboard
 from keyboards.cv2_xato_kb import cv2_xato_keyboard
 from keyboards.payment_kb import get_amounts_keyboard
-from keyboards.format2_kb import get_format_keyboard
+from keyboards.format2_kb import get_format2_keyboard
 from services.localization import i18n
 from database.users_repo import get_user_lang, get_user_balance
 
@@ -104,7 +104,7 @@ async def anketa2_confirm_yes_callback(client, callback):
         
         # Format tanlash tugmalarini chiqaramiz
         try:
-            kb = get_format_keyboard(lang) # yoki o'zingizning klaviatura funksiyangiz
+            kb = get_format2_keyboard("anketa2")[cite: 4]
         except:
             kb = None
             
