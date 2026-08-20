@@ -102,15 +102,13 @@ async def anketa2_confirm_yes_callback(client, callback):
             
         await callback.message.edit_text(success_msg)
         
-        # Format tanlash tugmalarini chiqaramiz (universal_format2_callback mos kelishi uchun)
-        from keyboards.cv2_xato_kb import get_format2_keyboard # yoki o'zingizning format klaviaturangiz
+        # Format tanlash tugmalarini chiqaramiz
         try:
-            from keyboards.format2_kb import anketa2_format_keyboard
-            kb = anketa2_format_keyboard()
+            kb = get_format_keyboard(lang) # yoki o'zingizning klaviatura funksiyangiz
         except:
             kb = None
             
-        await callback.message.reply(format_text) # , reply_markup=kb agar mavjud bo'lsa
+        await callback.message.reply(format_text, reply_markup=kb)
     else:
         warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm."
         await callback.message.edit_text(warning_text)
