@@ -2,9 +2,11 @@
 from pyrogram import filters
 from bot import bitik
 import config
-from services.cv2_fsm import anketa2_fsm
+from services.cv2_fsm import anketa2_fsm, Anketa2State
 from keyboards.cv2_kb import anketa2_lang_keyboard
+from keyboards.cv2_xato_kb import cv2_xato_keyboard
 from keyboards.payment_kb import get_amounts_keyboard
+from keyboards.cv2_format_kb import get_format_keyboard  # Agar format klaviaturasi alohida bo'lsa
 from services.localization import i18n
 from database.users_repo import get_user_lang, get_user_balance
 
@@ -44,8 +46,13 @@ async def cv2_proceed_callback(client, callback):
             warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm, Sizda: {balance:,.0f} so'm."
             
         await callback.message.edit_text(warning_text)
+        try:
+            pay_select_text = i18n.t("pay_select_amount", lang=lang, file="message")
+        except:
+            pay_select_text = "To'lov miqdorini tanlang:"
+            
         await callback.message.reply(
-            i18n.t("pay_select_amount", lang=lang, file="message"),
+            pay_select_text,
             reply_markup=get_amounts_keyboard(lang)
         )
         
@@ -57,7 +64,11 @@ async def cv2_proceed_callback(client, callback):
 async def cv2_cancel_callback(client, callback):
     user_id = callback.from_user.id
     lang = get_user_lang(user_id)
-    cancel_text = i18n.t("payment_cancelled", lang=lang, file="message")
+    
+    try:
+        cancel_text = i18n.t("payment_cancelled", lang=lang, file="message")
+    except:
+        cancel_text = "❌ Amaliyot bekor qilindi."
     
     await callback.message.edit_text(cancel_text)
     await callback.answer()
@@ -69,27 +80,46 @@ async def anketa2_confirm_yes_callback(client, callback):
     user_id = callback.from_user.id
     lang = get_user_lang(user_id)
     
-    # Balansni tekshirish va keyingi qadamga o'tkazish logikasi
+    # Balansni tekshirish
     if user_id == config.ADMIN_ID:
         balance = 999999999.0
     else:
         balance = get_user_balance(user_id)
         
     if balance >= CV_PRICE:
-        anketa2_fsm.update_data(user_id, "cv_lang", lang)
-        text = i18n.t("select_cv_language", lang=lang, file="message")
+        # Ma'lumotlar tasdiqlandi, endi format tanlashga o'tamiz
+        anketa2_fsm.update_data(user_id, "waiting_for_format", True)
+        
+        try:
+            format_text = i18n.t("select_format", lang=lang, file="anketa2")
+        except:
+            format_text = "📄 Hujjat formatini tanlang:"
+            
         try:
             success_msg = i18n.t("cv2_balance_enough", lang=lang, file="cv")
         except:
-            success_msg = "✅ Ma'lumotlar tasdiqlandi. Davom etamiz!"
+            success_msg = "✅ Ma'lumotlar tasdiqlandi!"
             
         await callback.message.edit_text(success_msg)
-        await callback.message.reply(text, reply_markup=anketa2_lang_keyboard())
+        
+        # Format tanlash tugmalarini chiqaramiz (universal_format2_callback mos kelishi uchun)
+        from keyboards.cv2_xato_kb import get_format2_keyboard # yoki o'zingizning format klaviaturangiz
+        try:
+            from keyboards.format2_kb import anketa2_format_keyboard
+            kb = anketa2_format_keyboard()
+        except:
+            kb = None
+            
+        await callback.message.reply(format_text) # , reply_markup=kb agar mavjud bo'lsa
     else:
         warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm."
         await callback.message.edit_text(warning_text)
+        try:
+            pay_select_text = i18n.t("pay_select_amount", lang=lang, file="message")
+        except:
+            pay_select_text = "To'lov miqdorini tanlang:"
         await callback.message.reply(
-            i18n.t("pay_select_amount", lang=lang, file="message"),
+            pay_select_text,
             reply_markup=get_amounts_keyboard(lang)
         )
     await callback.answer()
@@ -101,7 +131,24 @@ async def anketa2_confirm_edit_callback(client, callback):
     user_id = callback.from_user.id
     lang = get_user_lang(user_id)
     
-    # Ma'lumotlarni qaytadan kiritishni boshlash
-    await callback.message.edit_text("🔄 Ma'lumotlarni qaytadan tahrirlash boshlandi. Iltimos, ma'lumotlarni qaytadan kiriting:")
-    # Bu yerda birinchi savolga yoki boshlang'ich holatga qaytarish amallarini yozishingiz mumkin
+    flow = anketa2_fsm.QUESTIONS_FLOW
+    if flow:
+        first_state = flow[0]
+        anketa2_fsm.set_state(user_id, first_state)
+        anketa2_fsm.update_data(user_id, "waiting_for_format", False)
+        
+        try:
+            edit_start_text = i18n.t("edit_started", lang=lang, file="anketa2")
+        except:
+            edit_start_text = "🔄 Ma'lumotlarni qaytadan tahrirlash boshlandi."
+            
+        await callback.message.edit_text(edit_start_text)
+        
+        try:
+            first_q_text = i18n.t(anketa2_fsm.get_question_key(first_state), lang=lang, file="anketa2")
+        except:
+            first_q_text = "Birinchi ma'lumotni kiriting:"
+            
+        await callback.message.reply(first_q_text)
+    
     await callback.answer()
