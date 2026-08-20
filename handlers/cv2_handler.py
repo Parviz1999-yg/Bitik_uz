@@ -83,6 +83,8 @@ async def set_cv2_lang(client, callback):
 
 # --- FSM FILTER ---
 async def check_cv2_filter(_, __, message):
+    if not message or not message.from_user:
+        return False
     user_id = message.from_user.id
     state = anketa2_fsm.get_state(user_id)
     data = anketa2_fsm.get_data(user_id) or {}

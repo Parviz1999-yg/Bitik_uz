@@ -82,6 +82,8 @@ async def set_cv_lang(client, callback):
 
 # --- FSM FILTER ---
 async def check_cv_filter(_, __, message):
+    if not message or not message.from_user:
+        return False
     user_id = message.from_user.id
     state = fsm.get_state(user_id)
     data = fsm.get_data(user_id) or {}
