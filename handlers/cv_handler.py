@@ -3,6 +3,7 @@ import os
 from pyrogram import filters
 from pyrogram.errors import MessageNotModified
 from bot import bitik
+import config  # config import qilinganligiga e'tibor bering
 from services.cv_fsm import fsm, CVState
 from keyboards.relative_kb import get_relatives_keyboard
 from keyboards.cv_kb import cv_lang_keyboard
@@ -13,7 +14,7 @@ from services.doc_service import create_cv_document
 from services.pdf_service import generate_pdf_anketa
 from services.localization import i18n
 from callbacks.relative_cb import handle_relative_callback
-from callbacks.format_cb import universal_format_callback  # <--- FORMAT_CB DAN IMPORT QILINDI
+from callbacks.format_cb import universal_format_callback
 from services.channel_service import enforce_subscription
 from database.users_repo import get_user_lang, get_user_balance, update_balance
 
@@ -28,7 +29,12 @@ async def process_cv_start(client, message):
     fsm.finish(user_id) 
     
     lang = get_user_lang(user_id)
-    balance = get_user_balance(user_id)
+    
+    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB KO'RSATISH
+    if user_id == config.ADMIN_ID:
+        balance = 999999999.0
+    else:
+        balance = get_user_balance(user_id)
     
     fsm.update_data(user_id, "cv_lang", lang)
     fsm.update_data(user_id, "waiting_for_format", False) 
@@ -213,9 +219,22 @@ async def rel_callback_handler(client, callback):
     await handle_relative_callback(client, callback)
 
 
-# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (format_cb.py dan foydalanadi) ---
+# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (Balansni tekshirish va admin uchun o'tkazib yuborish) ---
 @bitik.on_callback_query(filters.regex(r"^cv_format_(pdf|docx)$"))
 async def format_cv_callback(client, callback):
+    user_id = callback.from_user.id
+    
+    # 👑 AGAR ADMIN BO'LSA - BALANS TEKSHIRILMAYDI VA PUL YECHILMAYDI
+    if user_id != config.ADMIN_ID:
+        balance = get_user_balance(user_id)
+        if balance < CV_PRICE:
+            await callback.answer("⚠️ Balansingiz yetarli emas! Iltimos, hisobingizni to'ldiring.", show_alert=True)
+            return
+        
+        # Oddiy foydalanuvchidan narxni ayirib tashlash (agar universal_format_callback buni o'zi qilmasa)
+        # update_balance(user_id, -CV_PRICE)
+
+    # Hujjatni yaratishga ruxsat berish
     await universal_format_callback(
         client=client,
         callback=callback,

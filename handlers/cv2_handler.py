@@ -3,6 +3,7 @@ import os
 from pyrogram import filters
 from pyrogram.errors import MessageNotModified
 from bot import bitik
+import config  # <--- Config import qilindi
 from services.cv2_fsm import anketa2_fsm, Anketa2State
 from keyboards.cv2_kb import anketa2_lang_keyboard
 from keyboards.cv2_xato_kb import cv2_xato_keyboard
@@ -26,7 +27,12 @@ async def process_cv2_start(client, message):
     anketa2_fsm.finish(user_id) 
     
     lang = get_user_lang(user_id)
-    balance = get_user_balance(user_id)
+    
+    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB KO'RSATISH
+    if user_id == config.ADMIN_ID:
+        balance = 999999999.0
+    else:
+        balance = get_user_balance(user_id)
     
     anketa2_fsm.update_data(user_id, "cv_lang", lang)
     anketa2_fsm.update_data(user_id, "waiting_for_format", False) 
@@ -188,9 +194,18 @@ async def handle_cv2_inputs(client, message):
             await message.reply(ask_rasm_text)
 
 
-# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER ---
+# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (Admin uchun balans tekshirilmaydi) ---
 @bitik.on_callback_query(filters.regex(r"^anketa2_format_(pdf|docx)$"))
 async def format_cv2_callback(client, callback):
+    user_id = callback.from_user.id
+    
+    # 👑 AGAR ADMIN BO'LSA - BALANS TEKSHIRILMAYDI
+    if user_id != config.ADMIN_ID:
+        balance = get_user_balance(user_id)
+        if balance < CV_PRICE:
+            await callback.answer("⚠️ Balansingiz yetarli emas! Iltimos, hisobingizni to'ldiring.", show_alert=True)
+            return
+
     await universal_format2_callback(
         client=client,
         callback=callback,

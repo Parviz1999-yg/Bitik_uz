@@ -128,8 +128,12 @@ def get_all_users_count() -> int:
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT COUNT(*) FROM users")
+        cursor.execute("SELECT COUNT(*) as count FROM users")
         row = cursor.fetchone()
-        return row[0] if row else 0
+        # Agar lug'at ko'rinishida kelsa, kalit orqali o'qiymiz
+        if row:
+            return row["count"] if "count" in row else list(row.values())[0]
+        return 0
     finally:
+        cursor.close()
         conn.close()

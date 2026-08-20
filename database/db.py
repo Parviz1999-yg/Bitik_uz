@@ -10,15 +10,13 @@ def get_connection():
     return conn
 
 def init_db():
-    """Jadvalni to'liq yangidan yaratish va cheklovni to'g'rilash"""
+    """Jadvalni mavjud ma'lumotlarni o'chirmasdan xavfsiz yaratish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        # DIQAT: Eski jadvalni butunlay o'chirib yuboramiz va to'g'ri cheklov bilan qaytadan ochamiz
-        cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
-        
+        # DROP TABLE olib tashlandi, shuning uchun ma'lumotlar har safar o'chib ketmaydi
         cursor.execute("""
-            CREATE TABLE users (
+            CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 tg_id BIGINT NOT NULL UNIQUE,
                 username TEXT,
