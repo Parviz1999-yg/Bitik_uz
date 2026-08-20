@@ -1,23 +1,7 @@
+# services/pdf_service (yoki tegishli service fayli)
 import os
 import re
-import shutil
-import pdfkit
-
-def link_callback(uri, rel):
-    """
-    pdfkit yoki shablon uchun resurslar yo'lini to'g'rilashga yordam beradi.
-    """
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    if "fonts" in uri or "templates" in uri:
-        full_path = os.path.join(base_dir, "..", uri)
-        if os.path.exists(full_path):
-            return os.path.abspath(full_path)
-            
-    if os.path.exists(uri):
-        return uri
-        
-    return uri
+from weasyprint import HTML
 
 def get_template_path(lang: str, template_name: str) -> str:
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -49,9 +33,9 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 
 def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> bool:
     """
-    Anketa2 (cv2) ma'lumotlari asosida anketa2.html shablonini to'ldirib, PDF yaratadi.
+    Anketa2 (cv2) ma'lumotlari asosida anketa2.html shablonini to'ldirib, WeasyPrint orqali PDF yaratadi.
     """
-    # 1. Anketa2 HTML shablonini topamiz
+    # 1. Anketa2 HTML shablonini topamiz[cite: 6]
     template_path = get_template_path(lang, "anketa2.html")
     if not template_path:
         return False
@@ -59,47 +43,24 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
     with open(template_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
-    # 2. Rasmni HTML formatga o'tkazish
+    # 2. Rasmni HTML formatga o'tkazish[cite: 6]
     data["rasm"] = get_user_photo_html(data)
 
-    # 3. Anketa2 maydonlarini regex orqali almashtirish
+    # 3. Anketa2 maydonlarini regex orqali almashtirish[cite: 6]
     for key, value in data.items():
         val_str = str(value or "")
         pattern = r"\{\{\s*" + re.escape(key) + r"\s*\}\}"
         html_content = re.sub(pattern, lambda m: val_str, html_content)
 
-    # 4. Chiqish fayl yo'lini aniqlash (anketa2 prefiksi bilan)
+    # 4. Chiqish fayl yo'lini aniqlash (anketa2 prefiksi bilan)[cite: 6]
     if not output_pdf_path:
         user_id = data.get("tg_id") or data.get("user_id", "anketa2")
         output_pdf_path = get_output_path(user_id, prefix="anketa2", ext="pdf")
 
-    # 5. PDF YARATISH (Avtomatikani aniqlash)
+    # 5. PDF YARATISH (WeasyPrint yordamida)
     try:
-        # Avval environment variable yoki tizimdan qidiramiz
-        wkhtmltopdf_path = os.getenv("WKHTMLTOPDF_PATH") or shutil.which("wkhtmltopdf")
-        
-        # Railway / Linux serverlari uchun standart yo'llarni tekshiramiz
-        if not wkhtmltopdf_path:
-            for path in ['/usr/bin/wkhtmltopdf', '/usr/local/bin/wkhtmltopdf']:
-                if os.path.exists(path):
-                    wkhtmltopdf_path = path
-                    break
-                    
-        # Windows uchun standart yo'l
-        if not wkhtmltopdf_path and os.path.exists(r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'):
-            wkhtmltopdf_path = r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe'
-            
-        config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path) if wkhtmltopdf_path else None
-        
-        pdfkit.from_string(
-            html_content, 
-            output_pdf_path, 
-            configuration=config, 
-            options={
-                'encoding': "UTF-8",
-                'enable-local-file-access': None
-            }
-        )
+        base_url = os.path.dirname(os.path.abspath(template_path))
+        HTML(string=html_content, base_url=base_url).write_pdf(output_pdf_path)
         return True
     except Exception as e:
         print(f"Anketa2 PDF yaratishda xatolik: {e}")

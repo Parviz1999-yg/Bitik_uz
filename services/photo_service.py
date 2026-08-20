@@ -22,37 +22,36 @@ def crop_image_3x4(input_path: str) -> str:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         if os.path.exists(cascade_path):
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
     except Exception as e:
         print(f"Yuzni aniqlashda ogohlantirish: {e}")
+
+    cropped = None
 
     if len(faces) > 0:
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
         
-        # 3x4 standartiga mos ravishda proporsiyani to'g'rilaymiz (2.7 barobar)
-        box_h = int(h * 2.7)
+        # Chetlarini ko'proq qirqish uchun kofitsiyentni kichikroq qilamiz (masalan, 1.6 - 1.8)
+        box_h = int(h * 1.7)  
         box_w = int(box_h * target_ratio)
         
         cx = x + w // 2
-        # Markazni yuz va yelka muvozanatlash uchun biroz pastroqqa qo'shamiz
-        cy = y + h // 2 + int(h * 0.1)
+        cy = y + h // 2
         
         x1 = cx - box_w // 2
-        y1 = cy - int(box_h * 0.4)  # Bosh Tepasi kesilmasligi uchun
+        y1 = cy - int(box_h * 0.3)  # Boshni yuqoriroqdan ushlash
         x2 = x1 + box_w
         y2 = y1 + box_h
             
+        # Agar koordinatalar rasm ichida bo'lsa kesib olamiz
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(img_w, x2), min(img_h, y2)
         
-        cropped = img[y1:y2, x1:x2]
-        if cropped.size == 0:
-            cropped = None
-    else:
-        cropped = None
+        if x2 > x1 and y2 > y1:
+            cropped = img[y1:y2, x1:x2]
 
-    # Agar yuz topilmagan bo'lsa yoki kesishda xatolik bo'lsa, markazdan proporsional kesamiz
-    if cropped is None or cropped.size == 0 or cropped.shape[0] == 0 or cropped.shape[1] == 0:
+    # Agar yuz topilmasa yoki chetga chiqib ketsa, markazdan juda zich (qistirib) kesamiz
+    if cropped is None or cropped.size == 0:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
             new_w = int(img_h * target_ratio)
@@ -60,10 +59,9 @@ def crop_image_3x4(input_path: str) -> str:
             cropped = img[:, offset:offset + new_w]
         else:
             new_h = int(img_w / target_ratio)
-            offset = (img_h - new_h) // 2
+            offset = max(0, int((img_h - new_h) * 0.15))
             cropped = img[offset:offset + new_h, :]
 
-    # Xavfsizlik uchun o'lchamni tekshiramiz
     if cropped is None or cropped.size == 0:
         return input_path
 
@@ -73,6 +71,9 @@ def crop_image_3x4(input_path: str) -> str:
     cv2.imwrite(output_path, cropped)
 
     return output_path
+
+def crop_image_3x4_anketa2(input_path: str) -> str:
+    return crop_image_3x4(input_path)
 
 async def process_user_photo(client, message):
     user_id = message.from_user.id
