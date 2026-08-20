@@ -21,7 +21,7 @@ async def universal_format2_callback(client, callback, prefix, translation_file,
     else:
         balance = get_user_balance(user_id)
     
-    format_type = callback.data.split("_")[-1]  # pdf yoki docx
+    format_type = callback.data.split("format_")[-1]  # pdf yoki docx
     
     # 1. Balansni tekshiramiz
     if balance < CV_PRICE:
