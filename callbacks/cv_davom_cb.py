@@ -42,7 +42,7 @@ async def cv_proceed_callback(client, callback):
                 balance=f"{balance:,.0f}"
             )
         except:
-            warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm, Sizda: {balance:,.0f} so'm."
+            warning_text = f"⚠️ Balansingiz i yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm, Sizda: {balance:,.0f} so'm."
             
         await callback.message.edit_text(warning_text)
         await callback.message.reply(
