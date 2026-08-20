@@ -3,7 +3,7 @@ import os
 from pyrogram import filters
 from pyrogram.errors import MessageNotModified
 from bot import bitik
-import config  # <--- Config import qilindi
+import config  # <--- Admin ID uchun config import qilindi[cite: 8]
 from services.cv2_fsm import anketa2_fsm, Anketa2State
 from keyboards.cv2_kb import anketa2_lang_keyboard
 from keyboards.cv2_xato_kb import cv2_xato_keyboard
@@ -12,11 +12,11 @@ from keyboards.payment_kb import get_amounts_keyboard
 from services.doc2_service import create_cv2_document
 from services.pdf2_service import generate_pdf2_anketa
 from services.localization import i18n
-from callbacks.format2_cb import universal_format2_callback
+from callbacks.format2_cb import universal_format2_callback  # <--- FORMAT2_CB DAN IMPORT QILINDI[cite: 8]
 from services.channel_service import enforce_subscription
 from database.users_repo import get_user_lang, get_user_balance, update_balance
 
-CV_PRICE = 5000  # 2-anketa yaratish narxi (5 000 so'm)
+CV_PRICE = 5000  # 2-anketa yaratish narxi (5 000 so'm)[cite: 8]
 
 # --- 2-ANKETA YARATISHNI BOSHLASH (Umumiy funksiya) ---
 async def process_cv2_start(client, message):
@@ -28,7 +28,7 @@ async def process_cv2_start(client, message):
     
     lang = get_user_lang(user_id)
     
-    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB KO'RSATISH
+    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB KO'RSATISH[cite: 8]
     if user_id == config.ADMIN_ID:
         balance = 999999999.0
     else:
@@ -89,8 +89,6 @@ async def set_cv2_lang(client, callback):
 
 # --- FSM FILTER ---
 async def check_cv2_filter(_, __, message):
-    if not message or not message.from_user:
-        return False
     user_id = message.from_user.id
     state = anketa2_fsm.get_state(user_id)
     data = anketa2_fsm.get_data(user_id) or {}
@@ -194,18 +192,9 @@ async def handle_cv2_inputs(client, message):
             await message.reply(ask_rasm_text)
 
 
-# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (Admin uchun balans tekshirilmaydi) ---
+# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (format2_cb.py dan foydalanadi) ---[cite: 8]
 @bitik.on_callback_query(filters.regex(r"^anketa2_format_(pdf|docx)$"))
 async def format_cv2_callback(client, callback):
-    user_id = callback.from_user.id
-    
-    # 👑 AGAR ADMIN BO'LSA - BALANS TEKSHIRILMAYDI
-    if user_id != config.ADMIN_ID:
-        balance = get_user_balance(user_id)
-        if balance < CV_PRICE:
-            await callback.answer("⚠️ Balansingiz yetarli emas! Iltimos, hisobingizni to'ldiring.", show_alert=True)
-            return
-
     await universal_format2_callback(
         client=client,
         callback=callback,

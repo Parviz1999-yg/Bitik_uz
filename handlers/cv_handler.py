@@ -3,7 +3,7 @@ import os
 from pyrogram import filters
 from pyrogram.errors import MessageNotModified
 from bot import bitik
-import config  # config import qilinganligiga e'tibor bering
+import config  # <--- Admin ID uchun config import qilindi[cite: 5]
 from services.cv_fsm import fsm, CVState
 from keyboards.relative_kb import get_relatives_keyboard
 from keyboards.cv_kb import cv_lang_keyboard
@@ -219,7 +219,7 @@ async def rel_callback_handler(client, callback):
     await handle_relative_callback(client, callback)
 
 
-# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (Balansni tekshirish va admin uchun o'tkazib yuborish) ---
+# --- FORMAT TANLANGANDA ISHGA TUSHUVCHI HANDLER (Admin uchun balans tekshiruvisiz) ---
 @bitik.on_callback_query(filters.regex(r"^cv_format_(pdf|docx)$"))
 async def format_cv_callback(client, callback):
     user_id = callback.from_user.id
@@ -230,11 +230,7 @@ async def format_cv_callback(client, callback):
         if balance < CV_PRICE:
             await callback.answer("⚠️ Balansingiz yetarli emas! Iltimos, hisobingizni to'ldiring.", show_alert=True)
             return
-        
-        # Oddiy foydalanuvchidan narxni ayirib tashlash (agar universal_format_callback buni o'zi qilmasa)
-        # update_balance(user_id, -CV_PRICE)
 
-    # Hujjatni yaratishga ruxsat berish
     await universal_format_callback(
         client=client,
         callback=callback,
