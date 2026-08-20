@@ -74,41 +74,37 @@ async def cv2_cancel_callback(client, callback):
     await callback.answer()
 
 
-# --- TASDIQLASH (YES) CALLBACK'I (cv2_xato_kb uchun) ---
+# --- TASDIQLASH (YES) CALLBACK'I ---
 @bitik.on_callback_query(filters.regex(r"^anketa2_confirm_yes$"))
 async def anketa2_confirm_yes_callback(client, callback):
     user_id = callback.from_user.id
     lang = get_user_lang(user_id)
     
-    # Balansni tekshirish
+    # 👑 ADMIN UCHUN BALANSNI CHEKSIZ QILIB OLISH
     if user_id == config.ADMIN_ID:
         balance = 999999999.0
     else:
         balance = get_user_balance(user_id)
         
     if balance >= CV_PRICE:
-        # Ma'lumotlar tasdiqlandi, endi format tanlashga o'tamiz
+        anketa2_fsm.set_state(user_id, None)
         anketa2_fsm.update_data(user_id, "waiting_for_format", True)
         
         try:
-            format_text = i18n.t("select_format", lang=lang, file="anketa2")
-        except:
-            format_text = "📄 Hujjat formatini tanlang:"
+            text = i18n.t("choose_document_format", lang=lang, file="anketa2")
+        except Exception:
+            text = "📁 Hujjat formatini tanlang:"
             
         try:
-            success_msg = i18n.t("cv2_balance_enough", lang=lang, file="cv")
-        except:
-            success_msg = "✅ Ma'lumotlar tasdiqlandi!"
+            await callback.message.delete()
+        except Exception:
+            pass
             
-        await callback.message.edit_text(success_msg)
-        
-        # Format tanlash tugmalarini chiqaramiz
-        try:
-            kb = get_format2_keyboard("anketa2")[cite: 4]
-        except:
-            kb = None
-            
-        await callback.message.reply(format_text, reply_markup=kb)
+        await client.send_message(
+            chat_id=user_id,
+            text=text,
+            reply_markup=get_format2_keyboard(prefix="anketa2")
+        )
     else:
         warning_text = f"⚠️ Balansingiz yetarli emas! Kerakli summa: {CV_PRICE:,.0f} so'm."
         await callback.message.edit_text(warning_text)
@@ -123,30 +119,26 @@ async def anketa2_confirm_yes_callback(client, callback):
     await callback.answer()
 
 
-# --- TAHRIRLASH (EDIT) CALLBACK'I (cv2_xato_kb uchun) ---
+# --- TAHRIRLASH (EDIT) CALLBACK'I ---
 @bitik.on_callback_query(filters.regex(r"^anketa2_confirm_edit$"))
 async def anketa2_confirm_edit_callback(client, callback):
     user_id = callback.from_user.id
     lang = get_user_lang(user_id)
     
-    flow = anketa2_fsm.QUESTIONS_FLOW
-    if flow:
-        first_state = flow[0]
-        anketa2_fsm.set_state(user_id, first_state)
-        anketa2_fsm.update_data(user_id, "waiting_for_format", False)
-        
-        try:
-            edit_start_text = i18n.t("edit_started", lang=lang, file="anketa2")
-        except:
-            edit_start_text = "🔄 Ma'lumotlarni qaytadan tahrirlash boshlandi."
-            
-        await callback.message.edit_text(edit_start_text)
-        
-        try:
-            first_q_text = i18n.t(anketa2_fsm.get_question_key(first_state), lang=lang, file="anketa2")
-        except:
-            first_q_text = "Birinchi ma'lumotni kiriting:"
-            
-        await callback.message.reply(first_q_text)
+    anketa2_fsm.finish(user_id)
     
+    try:
+        text = i18n.t("cv_restarted", lang=lang, file="anketa2")
+    except Exception:
+        text = "❌ Ma'lumotlar tozalandi. Qaytadan boshlash uchun /create_cv2 buyrug'ini bosing:"
+    
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+        
+    await client.send_message(
+        chat_id=user_id,
+        text=text
+    )
     await callback.answer()
