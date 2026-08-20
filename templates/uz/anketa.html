@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @font-face {
+            font-family: 'TimesNewRoman';
+            src: url('../../fonts/times.ttf');
+            -pdf-font-name: 'TimesNewRoman';
+            -pdf-item-encoding: utf-8;
+        }
+        body {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11pt;
+            color: #000;
+            line-height: 1.4;
+            margin: 20px;
+        }
+        .header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin-bottom: 15px;
+        }
+        .form-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0px;
+        }
+        .form-table td {
+            padding: 5px 6px;
+            vertical-align: top;
+            font-size: 11pt;
+        }
+        .photo-box {
+            width: 132px;
+            height: 170px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .photo-box img {
+            width: 132px !important;
+            height: 170px !important;
+            object-fit: cover;
+        }
+        .center-text {
+            text-align: center;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        .relatives-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .relatives-table th, .relatives-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            font-size: 10pt;
+            vertical-align: middle;
+        }
+        .relatives-table th {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">MA’LUMOTNOMA.</div>
+
+    <!-- Asosiy ma'lumotlar va rasm birlashtirilgan jadval -->
+    <table class="form-table">
+        <!-- F.I.Sh va O'qish joyi qatori (O'ng tarafda rasm uchun katak boshlanadi: rowspan="4") -->
+        <tr>
+            <td colspan="2" style="width: 75%; vertical-align: top;">
+                <div class="center-text bold" style="font-size: 12pt; margin-bottom: 5px; text-align: center;">
+                    {{familiya}} {{ism}} {{nasab}}
+                </div>
+                <div style="margin: 0; padding: 0; text-align: left; line-height: 1.5;">
+                    {{boshlangich_sana}}- yildan buyon: <br>
+                    <span class="bold">{{oliygoh}}ning “{{yonalish}}” yo‘nalishi talabasi</span>
+                </div>
+            </td>
+            <td rowspan="4" style="width: 25%; vertical-align: top; text-align: right; padding-left: 10px;">
+                <div class="photo-box">{{rasm}}</div>
+            </td>
+        </tr>
+
+        <!-- Tug'ilgan yili va joyi -->
+        <tr>
+            <td style="width: 37.5%;"><b>Tug‘ilgan yili:</b><br>{{togilgan_yili}}- yil</td>
+            <td style="width: 37.5%;"><b>Tug‘ilgan joyi:</b><br>{{togilgan_joyi}}</td>
+        </tr>
+
+        <!-- Millati va Partiyaviyligi -->
+        <tr>
+            <td><b>Millati:</b><br>{{millati}}</td>
+            <td><b>Partiyaviyligi:</b><br>{{partiya}}</td>
+        </tr>
+
+        <!-- Ma'lumoti va Tamomlagan -->
+        <tr>
+            <td><b>Ma’lumoti:</b><br>{{malmoti}}</td>
+            <td><b>Tamomlagan:</b><br>{{tugatgan}}</td>
+        </tr>
+
+        <!-- Qolgan qatorlar odatiy davom etadi -->
+        <tr>
+            <td colspan="3"><b>Ma’lumoti bo‘yicha mutaxassisligi:</b><br>{{mutaxasisligi}}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><b>Ilmiy darajasi:</b><br>{{ilmiy_darajasi}}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><b>Ilmiy unvoni:</b><br>{{ilmiy_unvoni}}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><b>Qaysi chet el tillarini biladi:</b><br>{{til_bilish}}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><b>Davlat mukofoti bilan taqdirlanganmi (qanaqa):</b><br>{{mukofot}}</td>
+        </tr>
+        <tr>
+            <td colspan="3"><b>Xalq deputatlari, Respublika, viloyat, shahar va tuman kengashi deputati yoki boshqa saylanadigan organlarning a’zosimi (to‘liq ko‘rsatilishi lozim):</b><br>{{deputatlik}}</td>
+        </tr>
+    </table>
+
+    <div class="header" style="margin-top: 10px; margin-bottom: 5px;">MEHNAT FAOLIYATI:</div>
+    <div style="margin-bottom: 20px; text-align: justify;">
+        {{faoliyati}}
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="header" style="font-size: 12pt; margin-bottom: 15px;">
+        {{familiya}} {{ism}} {{nasab}}ning yaqin qarindoshlari haqida<br>MA’LUMOT
+    </div>
+
+    <table class="relatives-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Qarindoshligi</th>
+                <th style="width: 25%;">Familiya, ismi, otasining ismi</th>
+                <th style="width: 20%;">Tug‘ilgan yili va joyi</th>
+                <th style="width: 25%;">Ish joyi va lavozimi</th>
+                <th style="width: 15%;">Turar joyi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{qarindoshlar}}
+        </tbody>
+    </table>
+
+</body>
+</html>
