@@ -7,4 +7,4 @@ fastapi
 uvicorn
 opencv-python-headless>=4.5.0
 psycopg2-binary
-weasyprint
+xhtml2pdf

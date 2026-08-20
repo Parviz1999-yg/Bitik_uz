@@ -1,7 +1,6 @@
-# services/pdf_service (yoki tegishli service fayli)
 import os
 import re
-from weasyprint import HTML
+from xhtml2pdf import pisa
 
 def get_template_path(lang: str, template_name: str) -> str:
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -33,9 +32,9 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 
 def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> bool:
     """
-    Anketa2 (cv2) ma'lumotlari asosida anketa2.html shablonini to'ldirib, WeasyPrint orqali PDF yaratadi.
+    Anketa2 (cv2) ma'lumotlari asosida anketa2.html shablonini to'ldirib, xhtml2pdf orqali PDF yaratadi.
     """
-    # 1. Anketa2 HTML shablonini topamiz[cite: 6]
+    # 1. Anketa2 HTML shablonini topamiz
     template_path = get_template_path(lang, "anketa2.html")
     if not template_path:
         return False
@@ -43,25 +42,29 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
     with open(template_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
-    # 2. Rasmni HTML formatga o'tkazish[cite: 6]
+    # 2. Rasmni HTML formatga o'tkazish
     data["rasm"] = get_user_photo_html(data)
 
-    # 3. Anketa2 maydonlarini regex orqali almashtirish[cite: 6]
+    # 3. Anketa2 maydonlarini regex orqali almashtirish
     for key, value in data.items():
         val_str = str(value or "")
         pattern = r"\{\{\s*" + re.escape(key) + r"\s*\}\}"
         html_content = re.sub(pattern, lambda m: val_str, html_content)
 
-    # 4. Chiqish fayl yo'lini aniqlash (anketa2 prefiksi bilan)[cite: 6]
+    # 4. Chiqish fayl yo'lini aniqlash (anketa2 prefiksi bilan)
     if not output_pdf_path:
         user_id = data.get("tg_id") or data.get("user_id", "anketa2")
         output_pdf_path = get_output_path(user_id, prefix="anketa2", ext="pdf")
 
-    # 5. PDF YARATISH (WeasyPrint yordamida)
+    # 5. PDF YARATISH (xhtml2pdf yordamida)
     try:
-        base_url = os.path.dirname(os.path.abspath(template_path))
-        HTML(string=html_content, base_url=base_url).write_pdf(output_pdf_path)
-        return True
+        with open(output_pdf_path, "wb") as pdf_file:
+            pisa_status = pisa.CreatePDF(
+                html_content,
+                dest=pdf_file,
+                encoding='utf-8'
+            )
+        return not pisa_status.err
     except Exception as e:
         print(f"Anketa2 PDF yaratishda xatolik: {e}")
         return False

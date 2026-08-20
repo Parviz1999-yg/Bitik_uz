@@ -1,6 +1,6 @@
 import os
 import re
-from weasyprint import HTML
+from xhtml2pdf import pisa
 
 def get_template_path(lang: str, template_name: str) -> str:
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +31,7 @@ def get_output_path(user_id: any, prefix: str = "cv", ext: str = "pdf") -> str:
     return output_path
 
 def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> bool:
-    # 1. Shablonni topamiz
+    # 1. Shablonni topamiz[cite: 3]
     template_path = get_template_path(lang, "anketa.html")
     if not template_path:
         return False
@@ -39,16 +39,16 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
     with open(template_path, "r", encoding="utf-8") as f:
         html_content = f.read()
 
-    # 2. Rasmni HTML formatga o'tkazish
+    # 2. Rasmni HTML formatga o'tkazish[cite: 3]
     data["rasm"] = get_user_photo_html(data)
 
-    # 3. Ma'lumotlarni regex orqali almashtirish
+    # 3. Ma'lumotlarni regex orqali almashtirish[cite: 3]
     for key, value in data.items():
         val_str = str(value or "")
         pattern = r"\{\{\s*" + re.escape(key) + r"\s*\}\}"
         html_content = re.sub(pattern, lambda m: val_str, html_content)
 
-    # 4. Qarindoshlar ro'yxatini render qilish
+    # 4. Qarindoshlar ro'yxatini render qilish[cite: 3]
     qarindoshlar_html = ""
     raw_qarindoshlar = data.get("qarindoshlar_list", []) or data.get("qarindoshlar", [])
     for q in raw_qarindoshlar:
@@ -65,16 +65,20 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
     qarindosh_pattern = r"\{\{\s*qarindoshlar\s*\}\}"
     html_content = re.sub(qarindosh_pattern, lambda m: qarindoshlar_html, html_content)
 
-    # 5. Chiqish fayl yo'lini aniqlash
+    # 5. Chiqish fayl yo'lini aniqlash[cite: 3]
     if not output_pdf_path:
         user_id = data.get("tg_id") or data.get("user_id", "cv")
         output_pdf_path = get_output_path(user_id, prefix="cv", ext="pdf")
 
-    # 6. PDF YARATISH (WeasyPrint yordamida)
+    # 6. PDF YARATISH (xhtml2pdf yordamida)
     try:
-        base_url = os.path.dirname(os.path.abspath(template_path))
-        HTML(string=html_content, base_url=base_url).write_pdf(output_pdf_path)
-        return True
+        with open(output_pdf_path, "wb") as pdf_file:
+            pisa_status = pisa.CreatePDF(
+                html_content,
+                dest=pdf_file,
+                encoding='utf-8'
+            )
+        return not pisa_status.err
     except Exception as e:
-        print(f"WeasyPrint orqali PDF yaratishda xatolik: {e}")
+        print(f"Xxhtml2pdf orqali PDF yaratishda xatolik: {e}")
         return False
