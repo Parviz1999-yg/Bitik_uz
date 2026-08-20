@@ -5,3 +5,4 @@ pdfkit
 google-genai
 fastapi
 uvicorn
+opencv-python-headless
