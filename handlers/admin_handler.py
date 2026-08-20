@@ -6,6 +6,9 @@ from database.users_repo import set_admin, get_all_users_count, get_user_lang
 
 @bitik.on_message(filters.command(["admin", "setadmin"]))
 async def admin_commands(client, message):
+    if not message or not message.from_user:
+        return
+        
     user_id = message.from_user.id
     lang = get_user_lang(user_id) or "uz"
 
