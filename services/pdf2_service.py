@@ -41,12 +41,11 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         else:
             font_name = 'Helvetica'
 
-        # Stil va formatlar
-        header_center_style = ParagraphStyle(
-            'HeaderCenterStyle', fontName=font_name, fontSize=10, leading=12, alignment=1, textColor=colors.black
+        header_style = ParagraphStyle(
+            'HeaderStyle', fontName=font_name, fontSize=10, leading=12, alignment=1, textColor=colors.black
         )
-        title_center_style = ParagraphStyle(
-            'TitleCenterStyle', fontName=font_name, fontSize=11.5, leading=14, alignment=1, textColor=colors.black
+        title_style = ParagraphStyle(
+            'TitleStyle', fontName=font_name, fontSize=11.5, leading=14, alignment=1, textColor=colors.black
         )
         normal_style = ParagraphStyle(
             'NormalStyle', fontName=font_name, fontSize=9, leading=11.5, textColor=colors.black
@@ -57,11 +56,11 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
 
         talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         
-        # --- 1. SARLAVHANI SAHIFaning ENG YUQORIGA MARKAZGA CHIQARAMIZ ---
-        story.append(Paragraph(talim_text, header_center_style))
+        # --- 1. SARLAVHANI SAHifaning ENG YUQORIGA ALOHIDA QO'SHAMIZ ---
+        story.append(Paragraph(talim_text, header_style))
         story.append(Spacer(1, 4))
-        story.append(Paragraph("<b>SHAXSIY VARAQASI</b>", title_center_style))
-        story.append(Spacer(1, 10))
+        story.append(Paragraph("<b>SHAXSIY VARAQASI</b>", title_style))
+        story.append(Spacer(1, 8))
 
         # Rasm o'lchami asl holatida (99x127)
         photo_path = data.get("rasm") or data.get("user_photo")
@@ -69,7 +68,6 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         if photo_path and os.path.exists(photo_path):
             img_element = RLImage(photo_path, width=99, height=127)
 
-        # F.I.O jadvali
         fio_data = [
             [
                 Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
@@ -77,7 +75,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
                 Paragraph("<b>Sharifi</b><br/>" + str(data.get('sharif', '')), normal_style)
             ]
         ]
-        fio_table = Table(fio_data, colWidths=[135, 135, 158])
+        fio_table = Table(fio_data, colWidths=[130, 130, 140])
         fio_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('TOPPADDING', (0,0), (-1,-1), 0),
@@ -86,16 +84,16 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
         ]))
 
-        # Mutaxassislik va F.I.O jamlangan chap qism
+        # Pastki qismdagi chap blok (Mutaxassislik va F.I.O jadvali)
         top_left_content = [
             Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style),
             Spacer(1, 6),
             fio_table
         ]
 
-        # Sarlavha ostidagi qism: Chapda Mutaxassislik/FIO, O'ngda Rasm
+        # 2 ta ustun: Chap matn (Mutaxassislik + F.I.O) va O'ngda Rasm
         top_table_data = [[top_left_content, img_element if img_element else ""]]
-        top_table = Table(top_table_data, colWidths=[428, 110])
+        top_table = Table(top_table_data, colWidths=[425, 110])  # Kengliklar umumiy o'lchamga moslandi
         top_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
