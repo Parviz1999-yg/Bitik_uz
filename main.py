@@ -25,7 +25,10 @@ import callbacks.cv_davom_cb
 import callbacks.cv2_davom_cb
 from database.db import init_db
 
+import services.update_service
+
 import handlers.payment_handler
+
 
 if __name__=="__main__":
 

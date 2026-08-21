@@ -6,10 +6,9 @@ import cv2
 import os
 
 def crop_image_3x4_anketa2(input_path: str) -> str:
-
     target_w = 350
     target_h = 450
-    target_ratio = 3.5 / 4.5  # 3:4 nisbat
+    target_ratio = 3.5 / 4.5  # 3x4 pasport proporsiyasi
 
     img = cv2.imread(input_path)
     if img is None:
@@ -23,55 +22,54 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         if os.path.exists(cascade_path):
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+            # Yuzni aniqlash parametrlarini yanada aniqroq qilamiz
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=5, minSize=(30, 30))
     except Exception as e:
         print(f"Yuzni aniqlashda ogohlantirish: {e}")
 
     cropped = None
 
     if len(faces) > 0:
-        # Topilgan eng yirik yuzni olamiz
+        # Eng yirik yuzni tanlab olamiz
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
         
-        # PASPORT STANDARTI BO'YICHA HISOB-KITOB:
-        # Yuzning o'rtasi (markazi)
+        # PASPORT STANDARTI BO'YICHA IDEAL PROPORSIYA (Photoshop usuli):
+        # Yuz kadr balandligining taxminan 40-45% ini tashkil qilishi va markazda bo'lishi kerak.
         face_center_x = x + w // 2
-        face_center_y = y + h // 2
         
-        # 3x4 proporsiyaga mos keladigan umumiy kadr balandligini yuz o'lchamiga qarab belgilaymiz.
-        # Odatda pasport rasvida yuz kadr balandligining taxminan 40-50% ini egallashi kerak.
-        box_h = int(h * 2.8)  # Yuz hajmiga nisbatan optimal kadr balandligi
+        # Kadrning umumiy balandligini yuz o'lchamiga nisbatan hisoblaymiz
+        box_h = int(h * 2.7) 
         box_w = int(box_h * target_ratio)
         
-        # Kadrning chap/o'ng va tepa/past koordinatalari
-        # Yuz kadrning biroz yuqoriroq qismida joylashishi kerak (bosh tepasi sig'ishi uchun)
+        # Yuz kadrning yuqori qismidan pastroqda (taxminan 35% pastda) joylashadi
+        y1 = y - int(h * 0.65)  
         x1 = face_center_x - box_w // 2
-        y1 = y - int(h * 0.7)  # Yuzning tepasidan (peshonadan) yuqoriroqdan boshlaymiz
         x2 = x1 + box_w
         y2 = y1 + box_h
         
-        # Agar kadr rasm chegarasidan tashqariga chiqib ketsa, uni ichkariga suramiz (siljitamiz)
-        if x1 < 0:
-            x2 += abs(x1)
-            x1 = 0
-        if y1 < 0:
-            y2 += abs(y1)
-            y1 = 0
-        if x2 > img_w:
-            x1 -= (x2 - img_w)
-            x2 = img_w
-        if y2 > img_h:
-            y1 -= (y2 - img_h)
-            y2 = img_h
-            
-        # So'nggi chegaralarni qat'iy nazorat qilamiz
+        # Chegaralar rasm hajmidan chiqib ketishini oldini olamiz va ularni siljitamiz
+        dx1 = max(0, -x1)
+        dy1 = max(0, -y1)
+        dx2 = max(0, x2 - img_w)
+        dy2 = max(0, y2 - img_h)
+        
+        x1 += dx1
+        x2 += dx1
+        y1 += dy1
+        y2 += dy1
+        
+        x1 -= dx2
+        x2 -= dx2
+        y1 -= dy2
+        y2 -= dy2
+        
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(img_w, x2), min(img_h, y2)
         
         if x2 > x1 and y2 > y1:
             cropped = img[y1:y2, x1:x2]
 
-    # Agar yuz umuman topilmasa, rasmning markazidan to'g'ridan-to'g'ri 3x4 proporsiyada qirqamiz
+    # Agar yuz aniqlanmasa, rasmning markazidan to'g'ridan-to'g'ri 3x4 proporsiyada qirqib olamiz
     if cropped is None or cropped.size == 0:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
@@ -86,7 +84,7 @@ def crop_image_3x4_anketa2(input_path: str) -> str:
     if cropped is None or cropped.size == 0:
         return input_path
 
-    # Yakuniy o'lchamga keltiramiz (350x450 piksel)
+    # Yuqori sifatli interpolyatsiya (CUBIC) yordamida aniq 350x450 o'lchamga keltiramiz
     cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
 
     output_path = input_path.replace(".", "_cropped.")
@@ -104,14 +102,16 @@ async def process_user_photo_anketa2(client, message):
         photo_path = await client.download_media(message.photo.file_id, file_name=f"downloads/photo_anketa2_{user_id}.jpg")
         
         cropped_path = crop_image_3x4_anketa2(photo_path)
+        target_path = cropped_path if os.path.exists(cropped_path) else photo_path
         
-        anketa2_fsm.update_data(user_id, "user_photo", cropped_path)
-        anketa2_fsm.update_data(user_id, "rasm", cropped_path)
+        # Barcha oldingi ma'lumotlarni saqlagan holda rasmni yangilaymiz[cite: 8]
+        anketa2_fsm.update_data(user_id, "user_photo", target_path)
+        anketa2_fsm.update_data(user_id, "rasm", target_path)
         
-        # State'ni tozalaymiz (savollar va rasm bosqichi tugadi)[cite: 6]
+        # State'ni tozalaymiz (savollar va rasm bosqichi tugadi)[cite: 6, 8]
         anketa2_fsm.set_state(user_id, None)
         
-        # FORMATGA O'TISH O'RNIGA PREVIEW OYNASINI CHAQIRAMIZ:[cite: 6]
+        # Preview oynasiga o'tamiz[cite: 6, 8]
         await send_cv2_preview(client, message, user_id, lang)
         
     except Exception as e:

@@ -25,5 +25,6 @@
   "invoice_error_msg": "❌ Error sending invoice:",
   "payment_cancelled": "❌ Payment cancelled.",
   "payment_success_title": "✅ **Payment successfully completed!**",
-  "payment_added": "➕ Added to your balance"
+  "payment_added": "➕ Added to your balance",
+  "bot_updated": "🔄 **Bot updated!**\n\nNew features have been added and bugs fixed. Press the /start button to continue."
 }
