@@ -50,4 +50,4 @@ async def main():
     await bitik.stop()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    bitik.run(main())
