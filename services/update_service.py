@@ -8,8 +8,11 @@ from services.localization import i18n        # Siz ko'rsatgan i18n xizmati[cite
 def get_current_commit():
     """Git orqali joriy commit ID sini olish"""
     try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
-    except Exception:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
+        print(f"Topilgan commit: {commit}")
+        return commit
+    except Exception as e:
+        print(f"Git commitni o'qishda xatolik: {e}")
         return None
 
 def get_all_user_ids():
