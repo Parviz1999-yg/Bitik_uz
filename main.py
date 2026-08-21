@@ -30,13 +30,23 @@ import services.update_service
 import handlers.payment_handler
 
 
-if __name__ == "__main__":
+async def main():
     print("Baza tekshirilmoqda...")
     init_db()
 
-    print("bot ishga tushdi....")
+    print("Bot ishga tushmoqda...")
+    # Python 3.13 va Pyrogram uchun xavfsiz ulanish
+    await bitik.start()
     
+    print("Yangiliklar tekshirilmoqda va foydalanuvchilarga xabar yuborilmoqda...")
     try:
-        bitik.run()
+        await services.update_service.check_and_notify_users(bitik)
     except Exception as e:
-        print(f"Botni ishga tushirishda xatolik: {e}")
+        print(f"Update service xatosi: {e}")
+
+    print("Bot muvaffaqiyatli ishga tushdi va ishlamoqda...")
+    await idle()
+    await bitik.stop()
+
+if __name__ == "__main__":
+    asyncio.run(main())
