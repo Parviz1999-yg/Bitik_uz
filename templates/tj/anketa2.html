@@ -5,18 +5,36 @@
     <style>
         @font-face {
             font-family: 'TimesNewRoman';
-            src: url('../../fonts/times.ttf');
+            src: url('../../fonts/times.ttf') format('truetype');
+            -pdf-font-name: 'TimesNewRoman';
+            -pdf-item-encoding: utf-8;
+        }
+        @font-face {
+            font-family: 'TimesNewRoman';
+            src: url('../../fonts/timesbd.ttf') format('truetype');
+            -pdf-font-name: 'TimesNewRoman';
+            -pdf-item-encoding: utf-8;
+        }
+        @font-face {
+            font-family: 'TimesNewRoman';
+            src: url('../../fonts/timesbi.ttf') format('truetype');
+            -pdf-font-name: 'TimesNewRoman';
+            -pdf-item-encoding: utf-8;
+        }
+        @font-face {
+            font-family: 'TimesNewRoman';
+            src: url('../../fonts/timesi.ttf') format('truetype');
             -pdf-font-name: 'TimesNewRoman';
             -pdf-item-encoding: utf-8;
         }
         @page {
             size: A4;
-            margin: 10mm 12mm;
+            margin: 8mm 10mm;
             background-color: #ffffff;
         }
         body {
             font-family: "Times New Roman", Times, "TimesNewRoman", serif;
-            font-size: 10pt;
+            font-size: 9.5pt;
             color: #000;
             line-height: 1.15;
             margin: 0;
@@ -25,24 +43,27 @@
         .header-top {
             text-align: center;
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 10.5pt;
             line-height: 1.2;
         }
         .main-title {
             text-align: center;
             font-weight: bold;
-            font-size: 12pt;
+            font-size: 11.5pt;
             margin: 4px 0;
+            letter-spacing: 0.5px;
         }
-        .mutaxassislik {
-            font-size: 10.5pt;
+        .mutaxassislik-row {
+            width: 100%;
+            margin-top: 15px;
             margin-bottom: 4px;
+            font-size: 10pt;
         }
         .top-table {
             width: 100%;
             border-collapse: collapse;
             border: none;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .top-table td {
             border: none;
@@ -64,24 +85,22 @@
         .name-label {
             font-weight: bold;
             font-size: 9.5pt;
-            border-bottom: 1px dotted #000;
             padding-bottom: 1px;
         }
         .name-value {
             font-size: 10pt;
-            padding-top: 2px;
+            padding-top: 1px;
         }
         .form-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 0px;
         }
-        /* Kataklar matnga qarab kengayishi va zichlashishi uchun */
         .form-table td, .form-table th {
             border: 1px solid #000;
             padding: 3px 5px;
             vertical-align: middle;
-            font-size: 9.5pt;
+            font-size: 9pt;
             line-height: 1.15;
             word-wrap: break-word;
         }
@@ -92,20 +111,24 @@
 </head>
 <body>
 
-    <!-- Yuqori qism va rasm -->
+    <!-- Юқори қисм ва расм -->
     <table class="top-table">
         <tr>
-            <td style="width: 75%;">
+            <td style="width: 76%;">
                 <div class="header-top">
                     Донишгоҳи {{talim_muassasa}} ихтисоси {{yonalish}}<br>
                     донишҷӯи курси {{kurs}}
                 </div>
                 <div class="main-title">ВАРАҚАИ ШАХСӢ</div>
-                <div class="mutaxassislik">
+                
+                <div style="height: 15px;"></div>
+
+                <!-- Ихтисос қatori -->
+                <div class="mutaxassislik-row">
                     <b>Ихтисос:</b> {{yonalish}}
                 </div>
 
-                <!-- Familiya | Ismi | Sharifi -->
+                <!-- Насаб | Ном | Номи падар -->
                 <table class="name-subtable">
                     <tr>
                         <td style="width: 33%;">
@@ -124,16 +147,16 @@
                 </table>
             </td>
             
-            <!-- O'ng tomondagi rasm -->
-            <td style="width: 25%; text-align: right; vertical-align: top;">
-                <div style="width: 120px; height: 155px; float: right;">
+            <!-- Ўнг томондаги расм -->
+            <td style="width: 24%; text-align: right; vertical-align: top;">
+                <div style="width: 110px; height: 145px; float: right;">
                     {{rasm}}
                 </div>
             </td>
         </tr>
     </table>
 
-    <!-- Asosiy raqamlangan jadval (1-dan 10-gacha) -->
+    <!-- Асосий рақамланган жадвал (1-дан 10-гача) -->
     <table class="form-table">
         <tr>
             <td style="width: 5%;" class="center-text">1.</td>
@@ -187,33 +210,33 @@
         </tr>
     </table>
 
-    <!-- Vaqtincha yashash manzillari jadvali -->
+    <!-- Вақтинча яшаш манзиллари жадвали -->
     <table class="form-table" style="border-top: none;">
         <thead>
             <tr>
-                <th style="width: 5%;" class="center-text">Т/Р</th>
-                <th style="width: 70%;">Суроғаи истиқомати муваққатии донишҷӯ (хобгоҳ, хонаи иҷора, суроғаи хешовандони наздик ва рақамҳои телефон)</th>
-                <th style="width: 25%;">Санаи бақайдгирӣ</th>
+                <th style="width: 6%;" class="center-text">Т/Р</th>
+                <th style="width: 69%;">Суроғаи истиқомати муваққатии донишҷӯ (хобгоҳ, иҷора, хешовандон ва телефонҳо)</th>
+                <th style="width: 25%;" class="center-text">Санаи бақайдгирӣ</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td class="center-text">1</td>
+                <td class="center-text">1.</td>
                 <td>{{ijara}}</td>
                 <td class="center-text">{{ijara_sana}}</td>
             </tr>
             <tr>
-                <td class="center-text">2</td>
+                <td class="center-text">2.</td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
-                <td class="center-text">3</td>
+                <td class="center-text">3.</td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
-                <td class="center-text">4</td>
+                <td class="center-text">4.</td>
                 <td></td>
                 <td></td>
             </tr>
