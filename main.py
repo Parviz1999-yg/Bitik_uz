@@ -30,19 +30,13 @@ import services.update_service
 import handlers.payment_handler
 
 
-if __name__=="__main__":
-
+if __name__ == "__main__":
     print("Baza tekshirilmoqda...")
     init_db()
 
-    # --- Yangiliklarni tekshirib, foydalanuvchilarga yuborishni qo'shamiz ---
-    print("Yangiliklar tekshirilmoqda...")
-    try:
-        # bitik - bu Pyrogram Client obyekti bo'lgani uchun uni funksiyaga uzatamiz
-        asyncio.run(services.update_service.check_and_notify_users(bitik))
-    except Exception as e:
-        print(f"Update service xatosi: {e}")
-    # ----------------------------------------------------------------------
-
     print("bot ishga tushdi....")
-    bitik.run()
+    
+    try:
+        bitik.run()
+    except Exception as e:
+        print(f"Botni ishga tushirishda xatolik: {e}")

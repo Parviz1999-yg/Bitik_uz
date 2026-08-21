@@ -6,13 +6,18 @@ from database.users_repo import get_user_lang  # Foydalanuvchi tilini olish uchu
 from services.localization import i18n        # Siz ko'rsatgan i18n xizmati[cite: 10]
 
 def get_current_commit():
-    """Git orqali joriy commit ID sini olish"""
+    """Git orqali joriy commit ID sini olish (Railway uchun xavfsiz)"""
     try:
-        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode("ascii").strip()
         print(f"Topilgan commit: {commit}")
         return commit
-    except Exception as e:
-        print(f"Git commitni o'qishda xatolik: {e}")
+    except Exception:
+        # Railway muhitida git bo'lmasa, Railway taqdim etgan environment o'zgaruvchisidan commitni olamiz
+        railway_commit = os.getenv("RAILWAY_GIT_COMMIT_SHA")
+        if railway_commit:
+            print(f"Railway commit topildi: {railway_commit}")
+            return railway_commit
+        print("Git topilmadi, commit tekshirilmadi.")
         return None
 
 def get_all_user_ids():
