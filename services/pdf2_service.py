@@ -1,4 +1,4 @@
-import os
+ltw1import os
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -80,14 +80,13 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
             textColor=colors.black
         )
 
-        # 4. Yuqori qism (Talim muassasa, yo'nalish va kurs)[cite: 2]
+        # 4. Yuqori qism (Talim muassasa, yo'nalish, kurs va SHAXSIY VARAQASI)
         talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         
-        # Foydalanuvchi rasmini yuklash
+        # Foydalanuvchi rasmini yuklash (3.5cm x 4.5cm)
         photo_path = data.get("rasm") or data.get("user_photo")
         img_element = ""
         if photo_path and os.path.exists(photo_path):
-            # 3.5cm x 4.5cm o'lchamga moslashtirilgan piksellar
             img_element = RLImage(photo_path, width=99, height=127)
 
         top_left_content = [
@@ -99,7 +98,7 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
             Spacer(1, 6)
         ]
 
-        # Familiya | Ismi | Sharifi kichik jadvali[cite: 2]
+        # Familiya | Ismi | Sharifi kichik jadvali
         fio_data = [
             [
                 Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
@@ -113,22 +112,28 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
         ]))
         
         top_left_content.append(fio_table)
 
-        # Asosiy yuqori blok jadvali (Chapda ma'lumotlar, o'ngda rasm)
+        # Yuqori blok jadvali (Chapda matnlar, o'ngda rasm)
         top_table_data = [[top_left_content, img_element if img_element else ""]]
         top_table = Table(top_table_data, colWidths=[415, 120])
         top_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
         ]))
+        
+        # Avval FIO va mutaxassislik bloki qo'shiladi
         story.append(top_table)
+        
+        # Jadvallar bir-biriga yopishib qolmasligi yoki ustma-ust tushmasligi uchun aniq masofa
+        story.append(Spacer(1, 8))
 
-        # 5. Asosiy raqamlangan jadval (1-dan 10-gacha)[cite: 2]
+        # 5. Asosiy raqamlangan jadval (1-dan 10-gacha) uning ostiga tushadi
         form_rows = [
             ["1.", "Tug’ilgan yili joyi sanasi", data.get('tugilgan', '')],
             ["2.", "Millati", data.get('millati', '')],
