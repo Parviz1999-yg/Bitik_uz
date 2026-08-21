@@ -32,7 +32,7 @@ import handlers.payment_handler
 
 
 async def main():
-    print("Baza tekshirilmoqda...")
+    print("Baza tekshirilmoqda....")
     init_db()
 
     print("Bot ishga tushmoqda...")
