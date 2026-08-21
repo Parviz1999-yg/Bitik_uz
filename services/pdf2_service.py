@@ -17,12 +17,12 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
     ReportLab yordamida Anketa2 shablonini mukammal va xatosiz PDF formatida yaratadi.
     """
     try:
-        # 1. Chiqish fayl yo'lini aniqlash
+        # 1. Chiqish fayl yo'lini aniqlash[cite: 4]
         if not output_pdf_path:
             user_id = data.get("tg_id") or data.get("user_id", "anketa2")
             output_pdf_path = get_output_path(user_id, prefix="anketa2", ext="pdf")
 
-        # 2. A4 sahifa o'lchamlari va chekkalari (marginlar)
+        # 2. A4 sahifa o'lchamlari va chekkalari (marginlar)[cite: 4]
         doc = SimpleDocTemplate(
             output_pdf_path,
             pagesize=A4,
@@ -34,7 +34,7 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
         
         story = []
 
-        # 3. Times New Roman shriftini ro'yxatdan o'tkazish
+        # 3. Times New Roman shriftini ro'yxatdan o'tkazish[cite: 4]
         base_dir = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(base_dir, "..", "fonts", "times.ttf")
         
@@ -44,7 +44,7 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
         else:
             font_name = 'Helvetica'
 
-        # Stillarni aniqlash
+        # Stillarni aniqlash[cite: 4]
         header_style = ParagraphStyle(
             'HeaderStyle',
             fontName=font_name,
@@ -80,10 +80,10 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
             textColor=colors.black
         )
 
-        # 4. Yuqori qism (Talim muassasa, yo'nalish, kurs va SHAXSIY VARAQASI)
+        # 4. Yuqori qism (Talim muassasa, yo'nalish, kurs va SHAXSIY VARAQASI)[cite: 4]
         talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         
-        # Foydalanuvchi rasmini yuklash (3.5cm x 4.5cm)
+        # Foydalanuvchi rasmini yuklash (3.5cm x 4.5cm)[cite: 4]
         photo_path = data.get("rasm") or data.get("user_photo")
         img_element = ""
         if photo_path and os.path.exists(photo_path):
@@ -98,7 +98,7 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
             Spacer(1, 6)
         ]
 
-        # Familiya | Ismi | Sharifi kichik jadvali
+        # Familiya | Ismi | Sharifi kichik jadvali[cite: 4]
         fio_data = [
             [
                 Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
@@ -117,23 +117,22 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
         
         top_left_content.append(fio_table)
 
-        # Yuqori blok jadvali (Chapda matnlar, o'ngda rasm)
+        # Yuqori blok jadvali (Chapda matnlar, o'ngda rasm)[cite: 4]
         top_table_data = [[top_left_content, img_element if img_element else ""]]
         top_table = Table(top_table_data, colWidths=[415, 120])
         top_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),  # <-- Ortiqcha bo'shliq olib tashlandi
         ]))
         
-        # Avval FIO va mutaxassislik bloki qo'shiladi
+        # Yuqori qism story'ga qo'shiladi[cite: 4]
         story.append(top_table)
         
-        # Jadvallar bir-biriga yopishib qolmasligi yoki ustma-ust tushmasligi uchun aniq masofa
-        story.append(Spacer(1, 8))
+        # ORADAGI SPACER BUTUNLAY OLIB TASHLANDI (Oraliq bo'shliq yo'q)[cite: 4]
 
-        # 5. Asosiy raqamlangan jadval (1-dan 10-gacha) uning ostiga tushadi
+        # 5. Asosiy raqamlangan jadval (1-dan 10-gacha) to'g'ridan-to'g'ri ostiga tushadi[cite: 4]
         form_rows = [
             ["1.", "Tug’ilgan yili joyi sanasi", data.get('tugilgan', '')],
             ["2.", "Millati", data.get('millati', '')],
@@ -166,7 +165,7 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
         ]))
         story.append(main_table)
 
-        # 6. Vaqtincha yashash manzillari jadvali[cite: 2]
+        # 6. Vaqtincha yashash manzillari jadvali[cite: 2, 4]
         ijara_rows = [
             [
                 Paragraph("<b>T/R</b>", center_style),
@@ -196,7 +195,7 @@ def generate_pdf2_anketa(data: dict, lang: str, output_pdf_path: str = None) -> 
         story.append(Spacer(1, 0))
         story.append(ijara_table)
 
-        # 7. PDF faylni yig'ish va saqlash
+        # 7. PDF faylni yig'ish va saqlash[cite: 4]
         doc.build(story)
         return True
 
