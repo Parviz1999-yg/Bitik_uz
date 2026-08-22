@@ -14,7 +14,7 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
-    ReportLab yordamida Anketa2 shablonini talab qilingan o'lcham va ko'rinishda yaratadi.
+    ReportLab yordamida Anketa2 shablonini barcha jadval chiziqlari ko'rinadigan holda yaratadi.
     """
     try:
         if not output_pdf_path:
@@ -67,7 +67,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         story.append(Paragraph(mutaxassislik_text, normal_style))
         story.append(Spacer(1, 4))
 
-        # 3. FIO jadvali (Familiya, Ismi, Sharifi tagma-tag, ko'rinmas jadval ichida)
+        # 3. FIO jadvali (Familiya, Ismi, Sharifi tagma-tag, chiziqlari ko'rinadigan qilib)
         fio_data = [
             [
                 Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
@@ -82,31 +82,31 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         
         fio_table = Table(fio_data, colWidths=[col_w, col_w, col_w])
         fio_table.setStyle(TableStyle([
-            # Chiziqlar olib tashlandi (ko'rinmas jadval)
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),  # Chiziqlar yoqildi
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 2),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 3),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+            ('LEFTPADDING', (0,0), (-1,-1), 4),
             ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ]))
 
-        # 4. Rasm katakchasi (hajmi 3.5x4.5 sm, chiziqlari ko'rinmas)
+        # 4. Rasm katakchasi (hajmi 3.5x4.5 sm)
         photo_path = data.get("rasm") or data.get("user_photo")
         img_element = ""
         if photo_path and os.path.exists(photo_path):
             img_element = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
 
-        # 5. Yuqori qismni boshqaruvchi ko'rinmas asosiy konteyner jadval
-        # Umumiy kengligi asosiy jadval bilan bir xil (535 pt)
+        # 5. Yuqori qismni boshqaruvchi asosiy konteyner jadval (chiziqlari ko'rinadigan)
         top_wrapper_data = [[fio_table, img_element if img_element else ""]]
         top_wrapper_table = Table(top_wrapper_data, colWidths=[fio_width, 535 - fio_width])
         top_wrapper_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),  # Chiziqlar yoqildi
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (1,0), (1,0), 'RIGHT'),  # Rasm asosiy jadvalning o'ng chetiga tekislanadi
-            ('LEFTPADDING', (0,0), (-1,-1), 0),
-            ('RIGHTPADDING', (0,0), (-1,-1), 0),
-            ('TOPPADDING', (0,0), (-1,-1), 0),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('ALIGN', (1,0), (1,0), 'CENTER'),
+            ('LEFTPADDING', (0,0), (-1,-1), 4),
+            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+            ('TOPPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
         ]))
         story.append(top_wrapper_table)
         story.append(Spacer(1, 4))
