@@ -14,7 +14,7 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
-    ReportLab yordamida Anketa2 shablonini namuna asosida mukammal va xatosiz PDF formatida yaratadi.
+    ReportLab yordamida Anketa2 shablonini talab qilingan o'lcham va ko'rinishda yaratadi.
     """
     try:
         if not output_pdf_path:
@@ -55,20 +55,19 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             'CenterStyle', fontName=font_name, fontSize=9, leading=11.5, alignment=1, textColor=colors.black
         )
 
-        # 1. Sarlavha qismi
+        # 1. Sarlavha qismi (Listning o'rtasida eng yuqorida)
         talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         story.append(Paragraph(talim_text, header_style))
         story.append(Spacer(1, 4))
         story.append(Paragraph("<b>SHAXSIY VARAQASI</b>", title_style))
         story.append(Spacer(1, 6))
 
-        # 2. Rasm elementi
-        photo_path = data.get("rasm") or data.get("user_photo")
-        img_element = ""
-        if photo_path and os.path.exists(photo_path):
-            img_element = RLImage(photo_path, width=99, height=127)
+        # 2. Mutaxassislik yozuvi (Asosiy jadvalning chap chetiga tekislangan, FIO ustida)
+        mutaxassislik_text = f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}"
+        story.append(Paragraph(mutaxassislik_text, normal_style))
+        story.append(Spacer(1, 4))
 
-        # 3. FIO jadvali (Familiya, Ismi, Sharifi)
+        # 3. FIO jadvali (Familiya, Ismi, Sharifi tagma-tag, ko'rinmas jadval ichida)
         fio_data = [
             [
                 Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
@@ -76,36 +75,40 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
                 Paragraph("<b>Sharifi</b><br/>" + str(data.get('sharif', '')), normal_style)
             ]
         ]
-        fio_table = Table(fio_data, colWidths=[65, 65, 65])
+        
+        # Asosiy jadval kengligi = 535 pt. 4 sm qisqaroq = 535 - (4 * 28.35) = ~421.6 pt
+        fio_width = 535 - 113.4
+        col_w = fio_width / 3.0
+        
+        fio_table = Table(fio_data, colWidths=[col_w, col_w, col_w])
         fio_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            # Chiziqlar olib tashlandi (ko'rinmas jadval)
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 3),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ]))
 
-        # 4. Mutaxassislik va FIO jamlangan chap blok
-        top_left_content = [
-            Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style),
-            Spacer(1, 4),
-            fio_table
-        ]
+        # 4. Rasm katakchasi (hajmi 3.5x4.5 sm, chiziqlari ko'rinmas)
+        photo_path = data.get("rasm") or data.get("user_photo")
+        img_element = ""
+        if photo_path and os.path.exists(photo_path):
+            img_element = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
 
-        # 5. Yuqori qism jadvali (Chapda Mutaxassislik+FIO [195], O'ngda Rasm [340])
-        top_table_data = [[top_left_content, img_element if img_element else ""]]
-        top_table = Table(top_table_data, colWidths=[195, 340]) 
-        top_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        # 5. Yuqori qismni boshqaruvchi ko'rinmas asosiy konteyner jadval
+        # Umumiy kengligi asosiy jadval bilan bir xil (535 pt)
+        top_wrapper_data = [[fio_table, img_element if img_element else ""]]
+        top_wrapper_table = Table(top_wrapper_data, colWidths=[fio_width, 535 - fio_width])
+        top_wrapper_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (1,0), (1,0), 'CENTER'),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
-            ('TOPPADDING', (0,0), (-1,-1), 4),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('ALIGN', (1,0), (1,0), 'RIGHT'),  # Rasm asosiy jadvalning o'ng chetiga tekislanadi
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ]))
-        story.append(top_table)
+        story.append(top_wrapper_table)
         story.append(Spacer(1, 4))
 
         # 6. Asosiy raqamlangan jadval (1-10 bandlar)
