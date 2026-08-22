@@ -26,7 +26,7 @@
   "payment_cancelled": "❌ Payment cancelled.",
   "payment_success_title": "✅ **Payment successfully completed!**",
   "payment_added": "➕ Added to your balance",
-  "bot_updated": "🔄 **Bot updated!**\n\nNew features have been added and bugs fixed.\nThe bot has the following updates:\n{commit_message}\n\nPress the /start button to continue.",
+  "bot_updated": "🔄 **Bot updated!**\n\nNew features have been added and bugs fixed.\nThe bot has the following updates:\n{commit_message}\n\nWE ALSO WELCOME YOUR SUGGESTIONS\nFor suggestions and feedback: @Parviz-shdpi\n\nPress the /start button to continue.",
   "ai_footer": "\n\n💬 To end the AI chat, send the /stopai command.",
   "ai_stopped": "🛑 The AI chat has been ended.",
   "ai_stoppedd": "You are not in AI mode right now."
