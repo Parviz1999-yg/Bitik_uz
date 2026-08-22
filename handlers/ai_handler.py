@@ -4,7 +4,7 @@ from bot import bitik
 from database.users_repo import get_user_lang
 from services.localization import i18n
 from services.channel_service import enforce_subscription
-from services.ai_service import get_ai_response, reset_ai_chat, user_chats
+from services.ai_service import get_ai_response, reset_ai_chat, init_ai_chat, user_chats
 
 user_last_request = {}
 
@@ -19,10 +19,12 @@ async def start_ai_chat(client, message):
     user_id = message.from_user.id
     lang = get_user_lang(user_id)
     
-    # Sessiyani boshlaymiz
+    # MUHIM: Foydalanuvchini AI rejimiga o'tkazamiz (sessiyani ochamiz)
+    init_ai_chat(user_id, lang)
+    
     await message.reply(i18n.t("ai_start", lang=lang, file="message"))
 
-# 2. AI rejimidan chiqish komandasi (/stop yoki /exit)
+# 2. AI rejimidan chiqish komandasi (/stopai)
 @bitik.on_message(filters.command("stopai"))
 async def stop_ai_chat(client, message):
     if not message or not message.from_user:
@@ -36,15 +38,15 @@ async def stop_ai_chat(client, message):
     else:
         await message.reply("Siz hozir AI rejimida emassiz.")
 
-# 3. AI bilan muloqot qilish handler'i (Faqat AI rejimida turganlarga ishlaydi)
-@bitik.on_message(filters.text & ~filters.command(["start", "admin", "tolovlar", "buy", "help", "setadmin", "create_cv", "create_cv2", "language", "ai", "balans", "exit", "stop"]))
+# 3. AI bilan muloqot qilish handler'i
+@bitik.on_message(filters.text & ~filters.command(["start", "admin", "tolovlar", "buy", "help", "setadmin", "create_cv", "create_cv2", "language", "ai", "balans", "exit", "stop", "stopai"]))
 async def handle_ai_chat(client, message):
     if not message or not message.from_user:
         return
         
     user_id = message.from_user.id
     
-    # Agar foydalanuvchi /ai buyrug'ini bosib AI rejimiga KIRMAGAN bo'lsa, o'tkazib yuboramiz
+    # Agar foydalanuvchi /ai buyrug'ini bosib AI rejimiga kirmagan bo'lsa, o'tkazib yuboramiz
     if user_id not in user_chats:
         return
 
@@ -58,8 +60,8 @@ async def handle_ai_chat(client, message):
     current_time = time.time()
     last_time = user_last_request.get(user_id, 0)
     
-    if current_time - last_time < 30:
-        remaining = int(30 - (current_time - last_time))
+    if current_time - last_time < 15:
+        remaining = int(15 - (current_time - last_time))
         raw_text = i18n.t("ai_time", lang=lang, file="message")
         limit_text = raw_text.format(remaining=remaining)
         await message.reply(limit_text)
@@ -69,14 +71,12 @@ async def handle_ai_chat(client, message):
     processing_msg = await message.reply(i18n.t("ai_await", lang=lang, file="message"))
     
     try:
-        # AI dan javobni olamiz
         answer = get_ai_response(user_id, text, lang)
         
-        # Javob oxiriga to'xtatish haqidagi eslatmani qo'shamiz
         footer = i18n.t("ai_footer", lang=lang, file="message")
         full_response = answer + footer
         
-        await processing_msg.edit_text(full_response, parse_type="html") # Yoki Pyrogram qaysi parse_mode'ni qo'llab-quvvatlasa
+        await processing_msg.edit_text(full_response, parse_mode="html")
         
     except Exception as e:
         await processing_msg.edit_text(f"❌ Xatolik yuz berdi: {e}")
