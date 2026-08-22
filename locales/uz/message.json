@@ -27,5 +27,7 @@
   "payment_success_title": "✅ **To'lov muvaffaqiyatli yakunlandi!**",
   "payment_added": "➕ Hisobingizga qo'shildi",
   "bot_updated": "🔄 **Bot yangilandi!**\n\nBotimizga yangi imkoniyatlar qo'shildi va xatolar tuzatildi. Ishlatish uchun /start tugmasini bosing.",
-  "ai_footer": "\n\n<i>💬 AI bilan suhbatni tugatish uchun /stopai buyrug'ini bosing.</i>"
+  "ai_footer": "\n\n<i>💬 AI bilan suhbatni tugatish uchun /stopai buyrug'ini bosing.</i>",
+  "ai_stopped": "🛑 AI bilan suhbat yakunlandi.",
+  "ai_stoppedd": "Siz hozir AI rejimida emassiz."
 }

@@ -36,7 +36,7 @@ async def stop_ai_chat(client, message):
         reset_ai_chat(user_id)
         await message.reply(i18n.t("ai_stopped", lang=lang, file="message"))
     else:
-        await message.reply("Siz hozir AI rejimida emassiz.")
+        await message.reply(i18n.t("ai_stoppedd", lang=lang, file="message"))
 
 # 3. AI bilan muloqot qilish handler'i
 @bitik.on_message(filters.text & ~filters.command(["start", "admin", "tolovlar", "buy", "help", "setadmin", "create_cv", "create_cv2", "language", "ai", "balans", "exit", "stop", "stopai"]))
@@ -76,7 +76,7 @@ async def handle_ai_chat(client, message):
         footer = i18n.t("ai_footer", lang=lang, file="message")
         full_response = answer + footer
         
-        await processing_msg.edit_text(full_response, parse_mode="html")
+        await processing_msg.edit_text(full_response, parse_mode="HTML")
         
     except Exception as e:
         await processing_msg.edit_text(f"❌ Xatolik yuz berdi: {e}")
