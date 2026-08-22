@@ -113,10 +113,10 @@ async def check_and_notify_users(client):
             update_text = raw_template.format(commit_message=localized_commit_msg) + footer_text
 
             try:
-                await client.send_message(user_id, update_text, parse_mode="HTML")
+                await client.send_message(user_id, update_text)
                 await asyncio.sleep(0.05) 
             except Exception as e:
-                print(f"Xatolik user {user_id} ga yuborishda: {e}")
+                print(f"Xatolik userlarga yuborishda: {e}")
 
         # Yangi versiyani yozib qo'yamiz
         with open(version_file, "w") as f:
