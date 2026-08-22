@@ -76,7 +76,7 @@ async def handle_ai_chat(client, message):
         footer = i18n.t("ai_footer", lang=lang, file="message")
         full_response = answer + footer
         
-        await processing_msg.edit_text(full_response, parse_mode="HTML")
+        await processing_msg.edit_text(full_response)
         
     except Exception as e:
         await processing_msg.edit_text(f"❌ Xatolik yuz berdi: {e}")

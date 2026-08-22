@@ -27,7 +27,7 @@
   "payment_success_title": "✅ **Payment successfully completed!**",
   "payment_added": "➕ Added to your balance",
   "bot_updated": "🔄 **Bot updated!**\n\nNew features have been added and bugs fixed. Press the /start button to continue.",
-  "ai_footer": "\n\n<i>💬 To end the AI chat, send the /stopai command.</i>",
+  "ai_footer": "\n\n💬 To end the AI chat, send the /stopai command.",
   "ai_stopped": "🛑 The AI chat has been ended.",
   "ai_stoppedd": "You are not in AI mode right now."
 }
