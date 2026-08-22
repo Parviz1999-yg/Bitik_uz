@@ -14,7 +14,8 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
-    ReportLab yordamida Anketa2 shablonini barcha jadval chiziqlari ko'rinadigan holda yaratadi.
+    ReportLab yordamida Anketa2 shablonini yaratadi: 
+    FIO jadvali va rasm jadvali alohida-alohida tuzilgan.
     """
     try:
         if not output_pdf_path:
@@ -55,19 +56,22 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             'CenterStyle', fontName=font_name, fontSize=9, leading=11.5, alignment=1, textColor=colors.black
         )
 
-        # 1. Sarlavha qismi (Listning o'rtasida eng yuqorida)
+        # 1. Sarlavha qismi
         talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         story.append(Paragraph(talim_text, header_style))
         story.append(Spacer(1, 4))
         story.append(Paragraph("<b>SHAXSIY VARAQASI</b>", title_style))
         story.append(Spacer(1, 6))
 
-        # 2. Mutaxassislik yozuvi (Asosiy jadvalning chap chetiga tekislangan, FIO ustida)
+        # 2. Mutaxassislik yozuvi
         mutaxassislik_text = f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}"
         story.append(Paragraph(mutaxassislik_text, normal_style))
         story.append(Spacer(1, 4))
 
-        # 3. FIO jadvali (Familiya, Ismi, Sharifi tagma-tag, chiziqlari ko'rinadigan qilib)
+        # --- 3. FIO JADVALI (Alohida 3 ustunli jadval) ---
+        fio_total_width = 535 - 113.4  # ~421.6 pt
+        col_w = fio_total_width / 3.0
+
         fio_data = [
             [
                 Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
@@ -76,13 +80,9 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ]
         ]
         
-        # Asosiy jadval kengligi = 535 pt. 4 sm qisqaroq = 535 - (4 * 28.35) = ~421.6 pt
-        fio_width = 535 - 113.4
-        col_w = fio_width / 3.0
-        
         fio_table = Table(fio_data, colWidths=[col_w, col_w, col_w])
         fio_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),  # Chiziqlar yoqildi
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('TOPPADDING', (0,0), (-1,-1), 3),
             ('BOTTOMPADDING', (0,0), (-1,-1), 3),
@@ -90,25 +90,39 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ]))
 
-        # 4. Rasm katakchasi (hajmi 3.5x4.5 sm)
+        # --- 4. RASM JADVALI (Alohida o'ziga xos katak/jadval) ---
         photo_path = data.get("rasm") or data.get("user_photo")
-        img_element = ""
         if photo_path and os.path.exists(photo_path):
             img_element = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
+            photo_cell = img_element
+        else:
+            photo_cell = Paragraph("3.5 x 4.5<br/>foto", center_style)
 
-        # 5. Yuqori qismni boshqaruvchi asosiy konteyner jadval (chiziqlari ko'rinadigan)
-        top_wrapper_data = [[fio_table, img_element if img_element else ""]]
-        top_wrapper_table = Table(top_wrapper_data, colWidths=[fio_width, 535 - fio_width])
-        top_wrapper_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),  # Chiziqlar yoqildi
+        photo_table_data = [[photo_cell]]
+        photo_table = Table(photo_table_data, colWidths=[113.4])
+        photo_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (1,0), (1,0), 'CENTER'),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
-            ('TOPPADDING', (0,0), (-1,-1), 4),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0,0), (-1,-1), 2),
+            ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
-        story.append(top_wrapper_table)
+
+        # --- 5. IKKAOLA ALOHIDA JADVALNI YONMA-YON QO'YISH (Chiziqsiz layout) ---
+        top_layout_data = [[fio_table, photo_table]]
+        top_layout_table = Table(top_layout_data, colWidths=[fio_total_width, 113.4])
+        top_layout_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('ALIGN', (1,0), (1,0), 'RIGHT'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        
+        story.append(top_layout_table)
         story.append(Spacer(1, 4))
 
         # 6. Asosiy raqamlangan jadval (1-10 bandlar)
