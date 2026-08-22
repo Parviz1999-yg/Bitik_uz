@@ -15,7 +15,7 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
     ReportLab yordamida Anketa2 shablonini yaratadi: 
-    Sarlavha sahifa bo'yicha markazda, FIO jadvali ko'rinmas chiziqli va rasm bilan tag qismidan tekislangan.
+    Sarlavha rasmning chap tomonida, <b> taglari to'g'ri ishlashi uchun Regular va Bold shriftlar ro'yxatdan o'tkazilgan.
     """
     try:
         if not output_pdf_path:
@@ -36,18 +36,30 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(base_dir, "..", "fonts", "times.ttf")
+        bold_font_path = os.path.join(base_dir, "..", "fonts", "timesbd.ttf")
         
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont('TimesNewRoman', font_path))
+            
+            # Agar bold shrift fayli mavjud bo'lsa, uni ham ro'yxatdan o'tkazamiz (<b> ishlashi uchun shart)
+            if os.path.exists(bold_font_path):
+                pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', bold_font_path))
+                pdfmetrics.registerFontFamily(
+                    'TimesNewRoman',
+                    normal='TimesNewRoman',
+                    bold='TimesNewRoman-Bold',
+                    italic='TimesNewRoman',
+                    boldItalic='TimesNewRoman-Bold'
+                )
             font_name = 'TimesNewRoman'
         else:
             font_name = 'Helvetica'
 
-        header_style = ParagraphStyle(
-            'HeaderStyle', fontName=font_name, fontSize=10, leading=12, alignment=1, textColor=colors.black
+        header_center_style = ParagraphStyle(
+            'HeaderCenterStyle', fontName=font_name, fontSize=10, leading=12, alignment=1, textColor=colors.black
         )
-        title_style = ParagraphStyle(
-            'TitleStyle', fontName=font_name, fontSize=11.5, leading=14, alignment=1, textColor=colors.black
+        title_center_style = ParagraphStyle(
+            'TitleCenterStyle', fontName=font_name, fontSize=11.5, leading=14, alignment=1, textColor=colors.black
         )
         normal_style = ParagraphStyle(
             'NormalStyle', fontName=font_name, fontSize=9, leading=11.5, textColor=colors.black
@@ -56,14 +68,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             'CenterStyle', fontName=font_name, fontSize=9, leading=11.5, alignment=1, textColor=colors.black
         )
 
-        # 1. Sahifa bo'yicha markazlangan sarlavha qismi
-        talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
-        story.append(Paragraph(talim_text, header_style))
-        story.append(Spacer(1, 2))
-        story.append(Paragraph("<b>SHAXSIY VARAQASI</b>", title_style))
-        story.append(Spacer(1, 4))
-
-        # --- 2. FIO JADVALI (Ko'rinmas chiziqli) ---
+        # --- 1. FIO JADVALI (Ko'rinmas chiziqli) ---
         fio_total_width = 535 - 113.4  # ~421.6 pt
         col_w = fio_total_width / 3.0
 
@@ -77,7 +82,6 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         
         fio_table = Table(fio_data, colWidths=[col_w, col_w, col_w])
         fio_table.setStyle(TableStyle([
-            # GRID olib tashlandi (ko'rinmas chiziq)
             ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
             ('TOPPADDING', (0,0), (-1,-1), 2),
             ('BOTTOMPADDING', (0,0), (-1,-1), 2),
@@ -85,15 +89,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # Mutaxassislik yozuvi va FIO jadvalini bitta blokka jamlash
-        mutaxassislik_text = Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style)
-        left_cell_content = [
-            mutaxassislik_text,
-            Spacer(1, 2),
-            fio_table
-        ]
-
-        # --- 3. RASM JADVALI ---
+        # --- 2. RASM JADVALI (Ko'rinmas chiziqli) ---
         photo_path = data.get("rasm") or data.get("user_photo")
         if photo_path and os.path.exists(photo_path):
             img_element = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
@@ -104,7 +100,6 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         photo_table_data = [[photo_cell]]
         photo_table = Table(photo_table_data, colWidths=[113.4])
         photo_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('TOPPADDING', (0,0), (-1,-1), 2),
@@ -113,12 +108,27 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # --- 4. YONMA-YON LOKATSIYA (Layout jadval) ---
+        # --- 3. CHAP TOMONGI KONTENT (Sarlavha, Mutaxassislik va FIO rasmdan chapda) ---
+        talim_raw = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
+        talim_text = f"<b>{talim_raw}</b>"
+        
+        mutaxassislik_text = Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style)
+
+        left_cell_content = [
+            Paragraph(talim_text, header_center_style),
+            Spacer(1, 2),
+            Paragraph("<b>SHAXSIY VARAQASI</b>", title_center_style),
+            Spacer(1, 4),
+            mutaxassislik_text,
+            Spacer(1, 2),
+            fio_table
+        ]
+
+        # --- 4. YONMA-YON LAYOUT JADVALI ---
         top_layout_data = [[left_cell_content, photo_table]]
         top_layout_table = Table(top_layout_data, colWidths=[fio_total_width, 113.4])
         top_layout_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
-            ('ALIGN', (1,0), (1,0), 'RIGHT'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
