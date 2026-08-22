@@ -15,7 +15,7 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
     ReportLab yordamida Anketa2 shablonini yaratadi: 
-    FIO jadvali va rasm jadvali alohida-alohida tuzilgan.
+    Sarlavha sahifa bo'yicha markazda, FIO jadvali ko'rinmas chiziqli va rasm bilan tag qismidan tekislangan.
     """
     try:
         if not output_pdf_path:
@@ -56,19 +56,14 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             'CenterStyle', fontName=font_name, fontSize=9, leading=11.5, alignment=1, textColor=colors.black
         )
 
-        # 1. Sarlavha qismi
+        # 1. Sahifa bo'yicha markazlangan sarlavha qismi
         talim_text = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         story.append(Paragraph(talim_text, header_style))
-        story.append(Spacer(1, 4))
+        story.append(Spacer(1, 2))
         story.append(Paragraph("<b>SHAXSIY VARAQASI</b>", title_style))
-        story.append(Spacer(1, 6))
-
-        # 2. Mutaxassislik yozuvi
-        mutaxassislik_text = f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}"
-        story.append(Paragraph(mutaxassislik_text, normal_style))
         story.append(Spacer(1, 4))
 
-        # --- 3. FIO JADVALI (Alohida 3 ustunli jadval) ---
+        # --- 2. FIO JADVALI (Ko'rinmas chiziqli) ---
         fio_total_width = 535 - 113.4  # ~421.6 pt
         col_w = fio_total_width / 3.0
 
@@ -82,15 +77,23 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         
         fio_table = Table(fio_data, colWidths=[col_w, col_w, col_w])
         fio_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 3),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+            # GRID olib tashlandi (ko'rinmas chiziq)
+            ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0,0), (-1,-1), 2),
+            ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # --- 4. RASM JADVALI (Alohida o'ziga xos katak/jadval) ---
+        # Mutaxassislik yozuvi va FIO jadvalini bitta blokka jamlash
+        mutaxassislik_text = Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style)
+        left_cell_content = [
+            mutaxassislik_text,
+            Spacer(1, 2),
+            fio_table
+        ]
+
+        # --- 3. RASM JADVALI ---
         photo_path = data.get("rasm") or data.get("user_photo")
         if photo_path and os.path.exists(photo_path):
             img_element = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
@@ -102,7 +105,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         photo_table = Table(photo_table_data, colWidths=[113.4])
         photo_table.setStyle(TableStyle([
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('TOPPADDING', (0,0), (-1,-1), 2),
             ('BOTTOMPADDING', (0,0), (-1,-1), 2),
@@ -110,11 +113,11 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # --- 5. IKKAOLA ALOHIDA JADVALNI YONMA-YON QO'YISH (Chiziqsiz layout) ---
-        top_layout_data = [[fio_table, photo_table]]
+        # --- 4. YONMA-YON LOKATSIYA (Layout jadval) ---
+        top_layout_data = [[left_cell_content, photo_table]]
         top_layout_table = Table(top_layout_data, colWidths=[fio_total_width, 113.4])
         top_layout_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
             ('ALIGN', (1,0), (1,0), 'RIGHT'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
@@ -125,7 +128,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         story.append(top_layout_table)
         story.append(Spacer(1, 4))
 
-        # 6. Asosiy raqamlangan jadval (1-10 bandlar)
+        # 5. Asosiy raqamlangan jadval (1-10 bandlar)
         form_rows = [
             ["1.", "Tug’ilgan yili joyi sanasi", data.get('tugilgan', '')],
             ["2.", "Millati", data.get('millati', '')],
@@ -158,7 +161,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         ]))
         story.append(main_table)
 
-        # 7. Vaqtincha yashash manzillari jadvali
+        # 6. Vaqtincha yashash manzillari jadvali
         ijara_rows = [
             [
                 Paragraph("<b>T/R</b>", center_style),
