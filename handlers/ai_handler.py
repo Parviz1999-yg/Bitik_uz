@@ -23,7 +23,7 @@ async def start_ai_chat(client, message):
     await message.reply(i18n.t("ai_start", lang=lang, file="message"))
 
 # 2. AI rejimidan chiqish komandasi (/stop yoki /exit)
-@bitik.on_message(filters.command("stopai")
+@bitik.on_message(filters.command("stopai"))
 async def stop_ai_chat(client, message):
     if not message or not message.from_user:
         return

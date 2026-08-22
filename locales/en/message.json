@@ -26,6 +26,6 @@
   "payment_cancelled": "❌ Payment cancelled.",
   "payment_success_title": "✅ **Payment successfully completed!**",
   "payment_added": "➕ Added to your balance",
-  "bot_updated": "🔄 **Bot updated!**\n\nNew features have been added and bugs fixed. Press the /start button to continue."
+  "bot_updated": "🔄 **Bot updated!**\n\nNew features have been added and bugs fixed. Press the /start button to continue.",
   "ai_footer": "\n\n<i>💬 To end the AI chat, send the /stopai command.</i>"
 }
