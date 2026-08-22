@@ -15,7 +15,7 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
     ReportLab yordamida Anketa2 shablonini yaratadi: 
-    Sarlavha rasmning chap tomonida, <b> taglari to'g'ri ishlashi uchun Regular va Bold shriftlar ro'yxatdan o'tkazilgan.
+    Sarlavha rasmning tepasiga tekislangan, orasida bo'shliq bor, FIO va rasm pastdan aniq tekislangan.
     """
     try:
         if not output_pdf_path:
@@ -41,7 +41,6 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont('TimesNewRoman', font_path))
             
-            # Agar bold shrift fayli mavjud bo'lsa, uni ham ro'yxatdan o'tkazamiz (<b> ishlashi uchun shart)
             if os.path.exists(bold_font_path):
                 pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', bold_font_path))
                 pdfmetrics.registerFontFamily(
@@ -91,8 +90,10 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
 
         # --- 2. RASM JADVALI (Ko'rinmas chiziqli) ---
         photo_path = data.get("rasm") or data.get("user_photo")
+        photo_height = 4.5 * 28.35  # ~127.58 pt
+        
         if photo_path and os.path.exists(photo_path):
-            img_element = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
+            img_element = RLImage(photo_path, width=3.5 * 28.35, height=photo_height)
             photo_cell = img_element
         else:
             photo_cell = Paragraph("3.5 x 4.5<br/>foto", center_style)
@@ -108,27 +109,45 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # --- 3. CHAP TOMONGI KONTENT (Sarlavha, Mutaxassislik va FIO rasmdan chapda) ---
+        # --- 3. CHAP TOMONGI ICHKI KONTENT (Sarlavha tepada, FIO pastda) ---
         talim_raw = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
         talim_text = f"<b>{talim_raw}</b>"
         
-        mutaxassislik_text = Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style)
-
-        left_cell_content = [
+        top_content = [
             Paragraph(talim_text, header_center_style),
-            Spacer(1, 2),
-            Paragraph("<b>SHAXSIY VARAQASI</b>", title_center_style),
-            Spacer(1, 4),
+            Spacer(1, 6),  # Kurs talabasi va Shaxsiy varaqasi orasidagi bo'shliq
+            Paragraph("<b>SHAXSIY VARAQASI</b>", title_center_style)
+        ]
+
+        mutaxassislik_text = Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style)
+        bottom_content = [
             mutaxassislik_text,
             Spacer(1, 2),
             fio_table
         ]
 
-        # --- 4. YONMA-YON LAYOUT JADVALI ---
-        top_layout_data = [[left_cell_content, photo_table]]
+        # Ichki jadval yordamida sarlavhani tepaga, FIO ni rasmning tagiga moslaymiz
+        left_inner_data = [
+            [top_content],
+            [bottom_content]
+        ]
+        
+        # Jami balandlik rasm balandligiga tenglashtiriladi
+        left_inner_table = Table(left_inner_data, colWidths=[fio_total_width], rowHeights=[45, photo_height - 45])
+        left_inner_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (0,0), 'TOP'),     # Sarlavha qismi rasmning tepasiga tekislanadi
+            ('VALIGN', (0,1), (0,1), 'BOTTOM'),  # Mutaxassislik va FIO rasmning tagiga tekislanadi
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+
+        # --- 4. ASOSIY YONMA-YON LAYOUT JADVALI ---
+        top_layout_data = [[left_inner_table, photo_table]]
         top_layout_table = Table(top_layout_data, colWidths=[fio_total_width, 113.4])
         top_layout_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
