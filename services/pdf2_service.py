@@ -5,6 +5,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from services.localization import i18n  # <--- i18n import qilindi
 
 def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> str:
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,14 +16,13 @@ def get_output_path(user_id: any, prefix: str = "anketa2", ext: str = "pdf") -> 
 def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     """
     ReportLab yordamida Anketa2 shablonini yaratadi: 
-    Sarlavha rasmning tepasiga tekislangan, orasida bo'shliq bor, FIO va rasm pastdan aniq tekislangan.
+    Barcha statik matnlar i18n orqali tillarga moslashtirilgan.
     """
     try:
         if not output_pdf_path:
             user_id = data.get("tg_id") or data.get("user_id", "anketa2")
             output_pdf_path = get_output_path(user_id, prefix="anketa2", ext="pdf")
 
-        # A4 sahifa va chekkalar (margins)
         doc = SimpleDocTemplate(
             output_pdf_path,
             pagesize=A4,
@@ -40,7 +40,6 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont('TimesNewRoman', font_path))
-            
             if os.path.exists(bold_font_path):
                 pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', bold_font_path))
                 pdfmetrics.registerFontFamily(
@@ -67,15 +66,15 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             'CenterStyle', fontName=font_name, fontSize=9, leading=11.5, alignment=1, textColor=colors.black
         )
 
-        # --- 1. FIO JADVALI (Ko'rinmas chiziqli) ---
+        # --- 1. FIO JADVALI ---
         fio_total_width = 535 - 113.4  # ~421.6 pt
         col_w = fio_total_width / 3.0
 
         fio_data = [
             [
-                Paragraph("<b>Familiya</b><br/>" + str(data.get('familiya', '')), normal_style),
-                Paragraph("<b>Ismi</b><br/>" + str(data.get('ism', '')), normal_style),
-                Paragraph("<b>Sharifi</b><br/>" + str(data.get('sharif', '')), normal_style)
+                Paragraph(f"<b>{i18n.t('familiya', lang=lang, file='anketa2')}</b><br/>" + str(data.get('familiya', '')), normal_style),
+                Paragraph(f"<b>{i18n.t('ism', lang=lang, file='anketa2')}</b><br/>" + str(data.get('ism', '')), normal_style),
+                Paragraph(f"<b>{i18n.t('sharif', lang=lang, file='anketa2')}</b><br/>" + str(data.get('sharif', '')), normal_style)
             ]
         ]
         
@@ -88,7 +87,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # --- 2. RASM JADVALI (Ko'rinmas chiziqli) ---
+        # --- 2. RASM JADVALI ---
         photo_path = data.get("rasm") or data.get("user_photo")
         photo_height = 4.5 * 28.35  # ~127.58 pt
         
@@ -96,7 +95,7 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             img_element = RLImage(photo_path, width=3.5 * 28.35, height=photo_height)
             photo_cell = img_element
         else:
-            photo_cell = Paragraph("3.5 x 4.5<br/>foto", center_style)
+            photo_cell = Paragraph(i18n.t('foto_placeholder', lang=lang, file='anketa2'), center_style)
 
         photo_table_data = [[photo_cell]]
         photo_table = Table(photo_table_data, colWidths=[113.4])
@@ -109,41 +108,44 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
 
-        # --- 3. CHAP TOMONGI ICHKI KONTENT (Sarlavha tepada, FIO pastda) ---
-        talim_raw = f"{data.get('talim_muassasa', '')} {data.get('yonalish', '')} yo’nalishi<br/>{data.get('kurs', '')}-kurs talabasi"
+        # --- 3. CHAP TOMONGI ICHKI KONTENT ---
+        raw_student_title = i18n.t('student_title', lang=lang, file='anketa2')
+        talim_raw = raw_student_title.format(
+            muassasa=data.get('talim_muassasa', ''),
+            yonalish=data.get('yonalish', ''),
+            kurs=data.get('kurs', '')
+        )
         talim_text = f"<b>{talim_raw}</b>"
         
         top_content = [
             Paragraph(talim_text, header_center_style),
-            Spacer(1, 6),  # Kurs talabasi va Shaxsiy varaqasi orasidagi bo'shliq
-            Paragraph("<b>SHAXSIY VARAQASI</b>", title_center_style)
+            Spacer(1, 6),
+            Paragraph(f"<b>{i18n.t('shaxsiy_varaqasi', lang=lang, file='anketa2')}</b>", title_center_style)
         ]
 
-        mutaxassislik_text = Paragraph(f"<b>Mutaxassislik:</b> {data.get('yonalish', '')}", normal_style)
+        mutaxassislik_text = Paragraph(f"<b>{i18n.t('mutaxassislik', lang=lang, file='anketa2')}</b> {data.get('yonalish', '')}", normal_style)
         bottom_content = [
             mutaxassislik_text,
             Spacer(1, 2),
             fio_table
         ]
 
-        # Ichki jadval yordamida sarlavhani tepaga, FIO ni rasmning tagiga moslaymiz
         left_inner_data = [
             [top_content],
             [bottom_content]
         ]
         
-        # Jami balandlik rasm balandligiga tenglashtiriladi
         left_inner_table = Table(left_inner_data, colWidths=[fio_total_width], rowHeights=[45, photo_height - 45])
         left_inner_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (0,0), 'TOP'),     # Sarlavha qismi rasmning tepasiga tekislanadi
-            ('VALIGN', (0,1), (0,1), 'BOTTOM'),  # Mutaxassislik va FIO rasmning tagiga tekislanadi
+            ('VALIGN', (0,0), (0,0), 'TOP'),
+            ('VALIGN', (0,1), (0,1), 'BOTTOM'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('TOPPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ]))
 
-        # --- 4. ASOSIY YONMA-YON LAYOUT JADVALI ---
+        # --- 4. ASOSIY YONMA-YON LAYOUT ---
         top_layout_data = [[left_inner_table, photo_table]]
         top_layout_table = Table(top_layout_data, colWidths=[fio_total_width, 113.4])
         top_layout_table.setStyle(TableStyle([
@@ -157,26 +159,27 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         story.append(top_layout_table)
         story.append(Spacer(1, 4))
 
-        # 5. Asosiy raqamlangan jadval (1-10 bandlar)
-        form_rows = [
-            ["1.", "Tug’ilgan yili joyi sanasi", data.get('tugilgan', '')],
-            ["2.", "Millati", data.get('millati', '')],
-            ["3.", "Ma’lumoti (maktab, Al, kxk yoki boshqa o’quv yurti, nomi, tugatgan yili)", data.get('malumoti', '')],
-            ["4.", "O’qishga kirgan sanasi, buyruq nomeri", data.get('okishga_kirgan', '')],
-            ["5.", "O’qishga kirgunga qadar ish joyi, mansabi (agar ishlagan bo’lsa)", data.get('okishga_kirgunch', '')],
-            ["6.", "Ota-ona haqida ma’lumot (F.I.SH, qayerda, kim bo’lib ishlaydi, telefoni)", data.get('ota_ona', '')],
-            ["7.", "Ota-onasining yashash manzili, telefoni", data.get('ota_ona_manzl', '')],
-            ["8.", "Talabaning oilaviy ahvoli (turmush o’rtog’ining F.I.SH. qayerda, kim bo’lib ishlaydi, telefoni)", data.get('oilaviy', '')],
-            ["9.", "Pasport seriyasi, raqami, kim tomonidan, qachon berilgan", data.get('pasport', '')],
-            ["10.", "Talabaning doimiy yashash joyi (pasport bo’yicha doimiy ro’yxatga qo’yilgan joyi va vaqti)", data.get('doimiy_manzil', '')],
+        # --- 5. ASOSIY RAQAMLANGAN JADVAL (1-10 bandlar) ---
+        form_rows_keys = [
+            ("1.", "q_tugilgan", 'tugilgan'),
+            ("2.", "q_millati", 'millati'),
+            ("3.", "q_malumoti", 'malumoti'),
+            ("4.", "q_okishga_kirgan", 'okishga_kirgan'),
+            ("5.", "q_okishga_kirgunch", 'okishga_kirgunch'),
+            ("6.", "q_ota_ona", 'ota_ona'),
+            ("7.", "q_ota_ona_manzl", 'ota_ona_manzl'),
+            ("8.", "q_oilaviy", 'oilaviy'),
+            ("9.", "q_pasport", 'pasport'),
+            ("10.", "q_doimiy_manzil", 'doimiy_manzil'),
         ]
 
         table_data = []
-        for row in form_rows:
+        for num, key_name, data_key in form_rows_keys:
+            question_text = i18n.t(key_name, lang=lang, file='anketa2')
             table_data.append([
-                Paragraph(row[0], center_style),
-                Paragraph(row[1], normal_style),
-                Paragraph(str(row[2]), normal_style)
+                Paragraph(num, center_style),
+                Paragraph(question_text, normal_style),
+                Paragraph(str(data.get(data_key, '')), normal_style)
             ])
 
         main_table = Table(table_data, colWidths=[30, 165, 340])
@@ -190,12 +193,12 @@ def generate_pdf2_anketa(data: dict, lang: str = "uz", output_pdf_path: str = No
         ]))
         story.append(main_table)
 
-        # 6. Vaqtincha yashash manzillari jadvali
+        # --- 6. VAQTINCHA YASHASH MANZILLARI JADVALI ---
         ijara_rows = [
             [
-                Paragraph("<b>T/R</b>", center_style),
-                Paragraph("<b>Talabaning vaqtincha yashash manzili (talabalar turar joyi, ijara uy, yaqin qarindoshlarning uy manzili va telefon raqamlari)</b>", normal_style),
-                Paragraph("<b>Ro’yxatdan o’tkazilgan sana</b>", center_style)
+                Paragraph(f"<b>{i18n.t('ijara_tr', lang=lang, file='anketa2')}</b>", center_style),
+                Paragraph(f"<b>{i18n.t('ijara_manzil_title', lang=lang, file='anketa2')}</b>", normal_style),
+                Paragraph(f"<b>{i18n.t('ijara_sana_title', lang=lang, file='anketa2')}</b>", center_style)
             ],
             [
                 Paragraph("1.", center_style),

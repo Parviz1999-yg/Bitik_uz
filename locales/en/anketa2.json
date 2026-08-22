@@ -31,5 +31,26 @@
   "preview_title": "Check the entered data:",
   "btn_confirm": "✅ Correct / Confirm",
   "btn_edit": "🔄 Error / Restart",
-  "cv_restarted": "The questionnaire has been canceled. Send /create_cv2 to start again."
+  "cv_restarted": "The questionnaire has been canceled. Send /create_cv2 to start again.",
+ 
+  "familiya": "Last Name",
+  "ism": "First Name",
+  "sharif": "Middle Name",
+  "foto_placeholder": "3.5 x 4.5<br/>photo",
+  "student_title": "{muassasa}, {yonalish} program<br/>Year {kurs} student",
+  "shaxsiy_varaqasi": "PERSONAL RECORD SHEET",
+  "mutaxassislik": "Specialty/Major:",
+  "q_tugilgan": "Date and place of birth (day, month, year)",
+  "q_millati": "Nationality",
+  "q_malumoti": "Education (name of school, lyceum, college, or other educational institution, graduation year)",
+  "q_okishga_kirgan": "Date of admission, order number",
+  "q_okishga_kirgunch": "Place of work and position prior to admission (if applicable)",
+  "q_ota_ona": "Information about parents (Full name, workplace, position, phone number)",
+  "q_ota_ona_manzl": "Residential address and phone number of parents",
+  "q_oilaviy": "Student's marital status (Spouse's full name, workplace, position, phone number)",
+  "q_pasport": "Passport series, number, issued by whom and when",
+  "q_doimiy_manzil": "Student's permanent residence (place and date of permanent registration according to passport)",
+  "ijara_tr": "No.",
+  "ijara_manzil_title": "Student's temporary residence address (dormitory, rented apartment, close relatives' home address and phone numbers)",
+  "ijara_sana_title": "Date of registration"
 }

@@ -31,5 +31,26 @@
   "preview_title": "Kiritilgan ma'lumotlarni tekshiring:",
   "btn_confirm": "✅ To'g'ri / Tasdiqlash",
   "btn_edit": "🔄 Xato bor / Qaytadan boshlash",
-  "cv_restarted": "Anketa bekor qilindi. Qaytadan boshlash uchun /create_cv2 buyrug'ini bosing."
+  "cv_restarted": "Anketa bekor qilindi. Qaytadan boshlash uchun /create_cv2 buyrug'ini bosing.",
+  
+  "familiya": "Familiya",
+  "ism": "Ismi",
+  "sharif": "Sharifi",
+  "foto_placeholder": "3.5 x 4.5<br/>foto",
+  "student_title": "{muassasa} {yonalish} yo’nalishi<br/>{kurs}-kurs talabasi",
+  "shaxsiy_varaqasi": "SHAXSIY VARAQASI",
+  "mutaxassislik": "Mutaxassislik:",
+  "q_tugilgan": "Tug’ilgan yili joyi sanasi",
+  "q_millati": "Millati",
+  "q_malumoti": "Ma’lumoti (maktab, Al, kxk yoki boshqa o’quv yurti, nomi, tugatgan yili)",
+  "q_okishga_kirgan": "O’qishga kirgan sanasi, buyruq nomeri",
+  "q_okishga_kirgunch": "O’qishga kirgunga qadar ish joyi, mansabi (agar ishlagan bo’lsa)",
+  "q_ota_ona": "Ota-ona haqida ma’lumot (F.I.SH, qayerda, kim bo’lib ishlaydi, telefoni)",
+  "q_ota_ona_manzl": "Ota-onasining yashash manzili, telefoni",
+  "q_oilaviy": "Talabaning oilaviy ahvoli (turmush o’rtog’ining F.I.SH. qayerda, kim bo’lib ishlaydi, telefoni)",
+  "q_pasport": "Pasport seriyasi, raqami, kim tomonidan, qachon berilgan",
+  "q_doimiy_manzil": "Talabaning doimiy yashash joyi (pasport bo’yicha doimiy ro’yxatga qo’yilgan joyi va vaqti)",
+  "ijara_tr": "T/R",
+  "ijara_manzil_title": "Talabaning vaqtincha yashash manzili (talabalar turar joyi, ijara uy, yaqin qarindoshlarning uy manzili va telefon raqamlari)",
+  "ijara_sana_title": "Ro’yxatdan o’tkazilgan sana"
 }

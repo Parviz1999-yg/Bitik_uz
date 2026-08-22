@@ -26,5 +26,6 @@
   "payment_cancelled": "❌ To'lov bekor qilindi.",
   "payment_success_title": "✅ **To'lov muvaffaqiyatli yakunlandi!**",
   "payment_added": "➕ Hisobingizga qo'shildi",
-  "bot_updated": "🔄 **Bot yangilandi!**\n\nBotimizga yangi imkoniyatlar qo'shildi va xatolar tuzatildi. Ishlatish uchun /start tugmasini bosing."
+  "bot_updated": "🔄 **Bot yangilandi!**\n\nBotimizga yangi imkoniyatlar qo'shildi va xatolar tuzatildi. Ishlatish uchun /start tugmasini bosing.",
+  "ai_footer": "\n\n<i>💬 AI bilan suhbatni tugatish uchun /stopai buyrug'ini bosing.</i>"
 }
