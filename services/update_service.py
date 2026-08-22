@@ -54,7 +54,7 @@ def translate_text(text: str, target_lang: str) -> str:
     if target_lang == "uz":
         return text  
     
-    lang_names = {"ru": "русский", "tg": "тоҷикӣ", "en": tuz := "English"}
+    lang_names = {"ru": "русский", "tj": "тоҷикӣ", "en": := "English"}
     target = lang_names.get(target_lang, "English")
     
     try:
