@@ -85,16 +85,13 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         if no_photo_text == "pdf_no_photo": no_photo_text = "Rasm yo'q"
 
         # --- 1-SAHIFA: ASOSIY MA'LUMOTNOMA ---
-        story.append(Paragraph(f"<b>{title_main}</b>", header_style))
-        story.append(Spacer(1, 15))
-
         # Foydalanuvchi rasmini yuklash
         photo_path = data.get("rasm") or data.get("user_photo")
         if photo_path and os.path.exists(photo_path):
             photo_flowable = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
             photo_flowable.hAlign = 'RIGHT'
         else:
-            photo_flowable = Paragraph(f"<b>{no_photo_text}</b>", normal_style)
+            photo_flowable = Paragraph(f"<b>{no_photo_text}</b>", center_style)
 
         # F.I.Sh va O'qish joyi
         fio_text = f"{data.get('familiya', '')} {data.get('ism', '')} {data.get('nasab', '')}"
@@ -109,9 +106,12 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
                 yonalish=data.get('yonalish', '')
             )
         
+        # Sarlavha va asosiy matn rasm bilan bir chiziqda (birinchi katakda) boshlanadi
         top_cell_content = [
-            Paragraph(f"<b>{fio_text}</b>", center_style),
+            Paragraph(f"<b>{title_main}</b>", header_style),
             Spacer(1, 6),
+            Paragraph(f"<b>{fio_text}</b>", center_style),
+            Spacer(1, 4),
             Paragraph(study_text, normal_style)
         ]
 
@@ -173,10 +173,10 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
                 Paragraph(f"<b>{lbl_tugatgan}</b><br/>{data.get('tugatgan', '')}", normal_style),
                 ''
             ],
-            # Mutaxassisligi va qiymati bitta qatorda
+            # Mutaxassisligi: Nomi birinchi ustunda, qiymati keyingi ustunda
             [
-                Paragraph(f"<b>{lbl_mutaxasisligi}</b> {data.get('mutaxasisligi', '')}", normal_style), 
-                '', 
+                Paragraph(f"<b>{lbl_mutaxasisligi}</b>", normal_style), 
+                Paragraph(str(data.get('mutaxasisligi', '')), normal_style), 
                 ''
             ],
             # Ilmiy darajasi va Ilmiy unvoni yonma-yon bitta qatorda
@@ -207,23 +207,23 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('SPAN', (0,0), (1,0)), 
             ('SPAN', (2,0), (2,3)), # Rasm 4 ta qatordan iborat bo'lishi uchun davom etadi
-            ('SPAN', (0,4), (2,4)), # Mutaxasisligi qatori to'liq birlashtirilgan
-            ('SPAN', (1,5), (2,5)), # Ilmiy unvoni uchun o'ngdagi ustunlar birlashtirildi (yonma-yon joylashish uchun)
+            ('SPAN', (1,4), (2,4)), # Mutaxassisligi qiymati uchun ustunlar birlashtirildi
+            ('SPAN', (1,5), (2,5)), # Ilmiy unvoni uchun o'ngdagi ustunlar birlashtirildi
             ('SPAN', (0,6), (2,6)), # Til bilish
             ('SPAN', (0,7), (2,7)), # Mukofot
             ('SPAN', (0,8), (2,8)), # Deputatlik
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-            ('TOPPADDING', (0,0), (-1,-1), 5),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+            ('TOPPADDING', (0,0), (-1,-1), 3),
+            ('LEFTPADDING', (0,0), (-1,-1), 3),
+            ('RIGHTPADDING', (0,0), (-1,-1), 3),
         ]))
 
         story.append(main_table)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 10))
 
         # Mehnat faoliyati bo'limi
         story.append(Paragraph(f"<b>{lbl_faoliyati_title}</b>", header_style))
-        story.append(Spacer(1, 5))
+        story.append(Spacer(1, 3))
         faoliyat_text = data.get('faoliyati', '')
         story.append(Paragraph(faoliyat_text.replace('\n', '<br/>'), normal_style))
 
@@ -237,7 +237,7 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
             rel_title_text = rel_title_template.format(fio=fio_text)
 
         story.append(Paragraph(rel_title_text, header_style))
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 10))
 
         # Qarindoshlar jadvali sarlavhasi
         col1_text = i18n.t("pdf_rel_col_1", lang=lang, file="cv")
@@ -264,11 +264,11 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         ]
         rel_data = [rel_headers]
 
-        # Qarindoshlar qatorlarini qo'shish
+        # Qarindoshlar qatorlarini qo'shish (1-ustun - qarindoshlik darajasi - qalin qilib qo'yildi)
         raw_qarindoshlar = data.get("qarindoshlar_list", []) or data.get("qarindoshlar", [])
         for q in raw_qarindoshlar:
             rel_data.append([
-                Paragraph(str(q.get('qarindosh', '')), normal_style),
+                Paragraph(f"<b>{str(q.get('qarindosh', ''))}</b>", normal_style),
                 Paragraph(str(q.get('qarindosh_ism', '')), normal_style),
                 Paragraph(str(q.get('qatr_ty_tj', '')), normal_style),
                 Paragraph(str(q.get('qarin_kasb', '')), normal_style),
@@ -281,10 +281,10 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('TOPPADDING', (0,0), (-1,-1), 5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+            ('TOPPADDING', (0,0), (-1,-1), 3),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+            ('LEFTPADDING', (0,0), (-1,-1), 3),
+            ('RIGHTPADDING', (0,0), (-1,-1), 3),
         ]))
 
         story.append(rel_table)
