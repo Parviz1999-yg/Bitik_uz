@@ -60,5 +60,6 @@
   "pdf_rel_col_2": "Familiya, ismi, otasining ismi",
   "pdf_rel_col_3": "Tug‘ilgan yili va joyi",
   "pdf_rel_col_4": "Ish joyi va lavozimi",
-  "pdf_rel_col_5": "Turar joyi"
+  "pdf_rel_col_5": "Turar joyi",
+  "pdf_year_suffix": "yil"
 }

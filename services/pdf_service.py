@@ -17,19 +17,34 @@ def get_output_path(user_id: any, prefix: str = "cv", ext: str = "pdf") -> str:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     return output_path
 
+def format_year(val, lang: str) -> str:
+    """Yil qiymatini JSON lug'atidan olingan tilga mos ravishda formatlash"""
+    v = str(val).strip()
+    if not v:
+        return ""
+    # Agar foydalanuvchi allaqachon yil so'zini yozgan bo'lsa, teginmaymiz
+    if any(w in v.lower() for w in ['yil', 'йил', 'год', 'year', 'сол', 'г.']):
+        return v
+    
+    # JSON lug'atidan tilga mos yil qo'shimchasini olish
+    suffix = i18n.t("pdf_year_suffix", lang=lang, file="cv")
+    if suffix == "pdf_year_suffix":  # Agar kalit topilmasa zaxira qiymat
+        fallbacks = {"uz": "yil", "uz_cyrl": "йил", "ru": "г.", "tg": "сол", "en": ""}
+        suffix = fallbacks.get(lang, "")
+        
+    return f"{v} {suffix}".strip() if suffix else v
+
 def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     try:
-        # 1. Chiqish fayl yo'lini aniqlash
         if not output_pdf_path:
             user_id = data.get("tg_id") or data.get("user_id", "cv")
             output_pdf_path = get_output_path(user_id, prefix="cv", ext="pdf")
 
-        # 2. Times New Roman (normal va bold) shriftlarini to'liq ro'yxatdan o'tkazish
         base_dir = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(base_dir, "..", "fonts", "times.ttf")
         bold_font_path = os.path.join(base_dir, "..", "fonts", "timesbd.ttf")
         
-        font_name = "Helvetica" # Zaxira shrift
+        font_name = "Helvetica"
         if os.path.exists(font_path):
             try:
                 pdfmetrics.registerFont(TTFont('TimesNewRoman', font_path))
@@ -46,7 +61,6 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
             except Exception:
                 pass
 
-        # 3. PDF hujjatni sozlash
         doc = SimpleDocTemplate(
             output_pdf_path,
             pagesize=A4,
@@ -55,7 +69,6 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         )
         story = []
 
-        # Matn uslublari
         styles = getSampleStyleSheet()
         normal_style = ParagraphStyle(
             'AnketaNormal',
@@ -67,25 +80,22 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         center_style = ParagraphStyle(
             'AnketaCenter',
             parent=normal_style,
-            alignment=1, # Markazga tekislash
+            alignment=1,
         )
         header_style = ParagraphStyle(
             'AnketaHeader',
             parent=normal_style,
             fontSize=14,
             leading=16,
-            alignment=1, # Markazga tekislash
+            alignment=1,
         )
 
-        # --- LOKALIZATSIYA MATNLARI ---
         title_main = i18n.t("pdf_main_title", lang=lang, file="cv")
         if title_main == "pdf_main_title": title_main = "MA’LUMOTNOMA"
 
         no_photo_text = i18n.t("pdf_no_photo", lang=lang, file="cv")
         if no_photo_text == "pdf_no_photo": no_photo_text = "Rasm yo'q"
 
-        # --- 1-SAHIFA: ASOSIY MA'LUMOTNOMA ---
-        # Foydalanuvchi rasmini yuklash
         photo_path = data.get("rasm") or data.get("user_photo")
         if photo_path and os.path.exists(photo_path):
             photo_flowable = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
@@ -93,20 +103,20 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         else:
             photo_flowable = Paragraph(f"<b>{no_photo_text}</b>", center_style)
 
-        # F.I.Sh va O'qish joyi
         fio_text = f"{data.get('familiya', '')} {data.get('ism', '')} {data.get('nasab', '')}"
         
+        b_sana = format_year(data.get('boshlangich_sana', ''), lang)
+
         study_template = i18n.t("pdf_study_template", lang=lang, file="cv")
         if study_template == "pdf_study_template":
-            study_text = f"{data.get('boshlangich_sana', '')}- yildan buyon: <br/><b>{data.get('oliygoh', '')}ning “{data.get('yonalish', '')}” yo‘nalishi talabasi</b>"
+            study_text = f"{b_sana}dan buyon: <br/><b>{data.get('oliygoh', '')}ning “{data.get('yonalish', '')}” yo‘nalishi talabasi</b>"
         else:
             study_text = study_template.format(
-                boshlangich_sana=data.get('boshlangich_sana', ''),
+                boshlangich_sana=b_sana,
                 oliygoh=data.get('oliygoh', ''),
                 yonalish=data.get('yonalish', '')
             )
         
-        # Sarlavha va asosiy matn rasm bilan bir chiziqda (birinchi katakda) boshlanadi
         top_cell_content = [
             Paragraph(f"<b>{title_main}</b>", header_style),
             Spacer(1, 6),
@@ -115,7 +125,6 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
             Paragraph(study_text, normal_style)
         ]
 
-        # Jadval maydonlari (Labels)
         lbl_togilgan_yili = i18n.t("lbl_togilgan_yili", lang=lang, file="cv")
         if lbl_togilgan_yili == "lbl_togilgan_yili": lbl_togilgan_yili = "Tug‘ilgan yili:"
 
@@ -155,11 +164,12 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         lbl_faoliyati_title = i18n.t("lbl_faoliyati_title", lang=lang, file="cv")
         if lbl_faoliyati_title == "lbl_faoliyati_title": lbl_faoliyati_title = "MEHNAT FAOLIYATI:"
 
-        # Asosiy jadval ma'lumotlari
+        t_yil = format_year(data.get('togilgan_yili', ''), lang)
+
         t_data = [
             [top_cell_content, '', photo_flowable],
             [
-                Paragraph(f"<b>{lbl_togilgan_yili}</b><br/>{data.get('togilgan_yili', '')}- yil", normal_style),
+                Paragraph(f"<b>{lbl_togilgan_yili}</b><br/>{t_yil}", normal_style),
                 Paragraph(f"<b>{lbl_togilgan_joyi}</b><br/>{data.get('togilgan_joyi', '')}", normal_style),
                 ''
             ],
@@ -173,13 +183,11 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
                 Paragraph(f"<b>{lbl_tugatgan}</b><br/>{data.get('tugatgan', '')}", normal_style),
                 ''
             ],
-            # Mutaxassisligi: Nomi birinchi ustunda, qiymati keyingi ustunda
             [
                 Paragraph(f"<b>{lbl_mutaxasisligi}</b>", normal_style), 
                 Paragraph(str(data.get('mutaxasisligi', '')), normal_style), 
                 ''
             ],
-            # Ilmiy darajasi va Ilmiy unvoni yonma-yon bitta qatorda
             [
                 Paragraph(f"<b>{lbl_ilmiy_darajasi}</b><br/>{data.get('ilmiy_darajasi', '')}", normal_style),
                 Paragraph(f"<b>{lbl_ilmiy_unvoni}</b><br/>{data.get('ilmiy_unvoni', '')}", normal_style),
@@ -206,12 +214,12 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         main_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('SPAN', (0,0), (1,0)), 
-            ('SPAN', (2,0), (2,3)), # Rasm 4 ta qatordan iborat bo'lishi uchun davom etadi
-            ('SPAN', (1,4), (2,4)), # Mutaxassisligi qiymati uchun ustunlar birlashtirildi
-            ('SPAN', (1,5), (2,5)), # Ilmiy unvoni uchun o'ngdagi ustunlar birlashtirildi
-            ('SPAN', (0,6), (2,6)), # Til bilish
-            ('SPAN', (0,7), (2,7)), # Mukofot
-            ('SPAN', (0,8), (2,8)), # Deputatlik
+            ('SPAN', (2,0), (2,3)), 
+            ('SPAN', (1,4), (2,4)), 
+            ('SPAN', (1,5), (2,5)), 
+            ('SPAN', (0,6), (2,6)), 
+            ('SPAN', (0,7), (2,7)), 
+            ('SPAN', (0,8), (2,8)), 
             ('BOTTOMPADDING', (0,0), (-1,-1), 3),
             ('TOPPADDING', (0,0), (-1,-1), 3),
             ('LEFTPADDING', (0,0), (-1,-1), 3),
@@ -221,13 +229,11 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         story.append(main_table)
         story.append(Spacer(1, 10))
 
-        # Mehnat faoliyati bo'limi
         story.append(Paragraph(f"<b>{lbl_faoliyati_title}</b>", header_style))
         story.append(Spacer(1, 3))
         faoliyat_text = data.get('faoliyati', '')
         story.append(Paragraph(faoliyat_text.replace('\n', '<br/>'), normal_style))
 
-        # --- 2-SAHIFA: QARINDOSHLAR HAQIDA MA'LUMOT ---
         story.append(PageBreak())
 
         rel_title_template = i18n.t("pdf_rel_title_template", lang=lang, file="cv")
@@ -239,7 +245,6 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         story.append(Paragraph(rel_title_text, header_style))
         story.append(Spacer(1, 10))
 
-        # Qarindoshlar jadvali sarlavhasi
         col1_text = i18n.t("pdf_rel_col_1", lang=lang, file="cv")
         if col1_text == "pdf_rel_col_1": col1_text = "Qarindoshligi"
 
@@ -264,7 +269,6 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
         ]
         rel_data = [rel_headers]
 
-        # Qarindoshlar qatorlarini qo'shish (1-ustun - qarindoshlik darajasi - qalin qilib qo'yildi)
         raw_qarindoshlar = data.get("qarindoshlar_list", []) or data.get("qarindoshlar", [])
         for q in raw_qarindoshlar:
             rel_data.append([
@@ -289,7 +293,6 @@ def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = Non
 
         story.append(rel_table)
 
-        # PDF hujjatni yig'ib saqlash
         doc.build(story)
         return True
 

@@ -60,5 +60,6 @@
   "pdf_rel_col_2": "Full Name",
   "pdf_rel_col_3": "Year and place of birth",
   "pdf_rel_col_4": "Workplace and position",
-  "pdf_rel_col_5": "Place of residence"
+  "pdf_rel_col_5": "Place of residence",
+  "pdf_year_suffix": ""
 }
