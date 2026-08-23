@@ -165,7 +165,7 @@ async def handle_cv_inputs(client, message):
             return
 
         text_input = message.text.strip()
-        parts = [p.strip() for p in text_input.split("|")]
+        parts = [p.strip() for p in text_input.split(",")]
         
         rel_dict = {
             "qarindosh": parts[0] if len(parts) > 0 else text_input,
