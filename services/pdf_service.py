@@ -15,26 +15,36 @@ def get_output_path(user_id: any, prefix: str = "cv", ext: str = "pdf") -> str:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     return output_path
 
-def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> bool:
+def generate_pdf_anketa(data: dict, lang: str = "uz", output_pdf_path: str = None) -> bool:
     try:
         # 1. Chiqish fayl yo'lini aniqlash
         if not output_pdf_path:
             user_id = data.get("tg_id") or data.get("user_id", "cv")
             output_pdf_path = get_output_path(user_id, prefix="cv", ext="pdf")
 
-        # 2. Times New Roman shriftini ro'yxatdan o'tkazish
+        # 2. Times New Roman (normal va bold) shriftlarini to'liq ro'yxatdan o'tkazish
         base_dir = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(base_dir, "..", "fonts", "times.ttf")
+        bold_font_path = os.path.join(base_dir, "..", "fonts", "timesbd.ttf")
         
         font_name = "Helvetica" # Zaxira shrift
         if os.path.exists(font_path):
             try:
                 pdfmetrics.registerFont(TTFont('TimesNewRoman', font_path))
+                if os.path.exists(bold_font_path):
+                    pdfmetrics.registerFont(TTFont('TimesNewRoman-Bold', bold_font_path))
+                    pdfmetrics.registerFontFamily(
+                        'TimesNewRoman',
+                        normal='TimesNewRoman',
+                        bold='TimesNewRoman-Bold',
+                        italic='TimesNewRoman',
+                        boldItalic='TimesNewRoman-Bold'
+                    )
                 font_name = 'TimesNewRoman'
             except Exception:
                 pass
 
-        # 3. PDF hujjatni sozlash (A4 o'lchami, 20mm hoshiyalar)
+        # 3. PDF hujjatni sozlash
         doc = SimpleDocTemplate(
             output_pdf_path,
             pagesize=A4,
@@ -43,7 +53,7 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
         )
         story = []
 
-        # Matn uslublarini (Styles) yaratamiz
+        # Matn uslublari
         styles = getSampleStyleSheet()
         normal_style = ParagraphStyle(
             'AnketaNormal',
@@ -52,37 +62,44 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
             leading=13,
             textColor=colors.black
         )
+        center_style = ParagraphStyle(
+            'AnketaCenter',
+            parent=normal_style,
+            alignment=1, # Markazga tekislash
+        )
         header_style = ParagraphStyle(
             'AnketaHeader',
             parent=normal_style,
             fontSize=14,
             leading=16,
-            alignment=1, # Markazga tekislash
-            fontName=font_name
+            alignment=1, # Markazga tekislash (HTML <para align='center'> o'rniga xavfsiz usul)
         )
 
         # --- 1-SAHIFA: ASOSIY MA'LUMOTNOMA ---
-        story.append(Paragraph("<b>MA’LUMOTNOMA.</b>", header_style))
+        story.append(Paragraph("<b>MA’LUMOTNOMA</b>", header_style))
         story.append(Spacer(1, 15))
 
         # Foydalanuvchi rasmini yuklash
         photo_path = data.get("rasm") or data.get("user_photo")
         if photo_path and os.path.exists(photo_path):
-            # 3.5cm x 4.5cm o'lcham (1 sm = 28.35 nuqta)
             photo_flowable = RLImage(photo_path, width=3.5 * 28.35, height=4.5 * 28.35)
             photo_flowable.hAlign = 'RIGHT'
         else:
             photo_flowable = Paragraph("<b>Rasm yo'q</b>", normal_style)
 
-        # F.I.Sh va O'qish joyi matni
+        # F.I.Sh va O'qish joyi (xatolik bermaydigan elementlar ro'yxati)
         fio_text = f"{data.get('familiya', '')} {data.get('ism', '')} {data.get('nasab', '')}"
         study_text = f"{data.get('boshlangich_sana', '')}- yildan buyon: <br/><b>{data.get('oliygoh', '')}ning “{data.get('yonalish', '')}” yo‘nalishi talabasi</b>"
         
-        top_info_p = Paragraph(f"<para align='center'><b>{fio_text}</b></para><br/>{study_text}", normal_style)
+        top_cell_content = [
+            Paragraph(f"<b>{fio_text}</b>", center_style),
+            Spacer(1, 6),
+            Paragraph(study_text, normal_style)
+        ]
 
-        # Asosiy jadval ma'lumotlari (3 ta ustun: kengliklari moslashtirilgan)
+        # Asosiy jadval ma'lumotlari
         t_data = [
-            [top_info_p, '', photo_flowable],
+            [top_cell_content, '', photo_flowable],
             [
                 Paragraph(f"<b>Tug‘ilgan yili:</b><br/>{data.get('togilgan_yili', '')}- yil", normal_style),
                 Paragraph(f"<b>Tug‘ilgan joyi:</b><br/>{data.get('togilgan_joyi', '')}", normal_style),
@@ -109,9 +126,9 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
         main_table = Table(t_data, colWidths=[211, 211, 101])
         main_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('SPAN', (0,0), (1,0)), # FIO qatori 2 ta ustunni egallaydi
-            ('SPAN', (2,0), (2,3)), # Rasm 4 ta qatorni pastga qarab birlashtiradi
-            ('SPAN', (0,4), (2,4)), # Qolgan bandlar to'liq eniga cho'ziladi
+            ('SPAN', (0,0), (1,0)), 
+            ('SPAN', (2,0), (2,3)), 
+            ('SPAN', (0,4), (2,4)), 
             ('SPAN', (0,5), (2,5)),
             ('SPAN', (0,6), (2,6)),
             ('SPAN', (0,7), (2,7)),
@@ -135,7 +152,9 @@ def generate_pdf_anketa(data: dict, lang: str, output_pdf_path: str = None) -> b
         # --- 2-SAHIFA: QARINDOSHLAR HAQIDA MA'LUMOT ---
         story.append(PageBreak())
 
-        story.append(Paragraph(f"<para align='center'><b>{fio_text}ning yaqin qarindoshlari haqida<br/>MA’LUMOT</b></para>", header_style))
+        # Xavfli <para align='center'> o'rniga xavfsiz Paragraph va header_style ishlatildi
+        rel_title_text = f"<b>{fio_text}ning yaqin qarindoshlari haqida</b><br/><b>MA’LUMOT</b>"
+        story.append(Paragraph(rel_title_text, header_style))
         story.append(Spacer(1, 15))
 
         # Qarindoshlar jadvali sarlavhasi
