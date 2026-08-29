@@ -24,7 +24,8 @@ async def buy_command(client, message):
 
 @bitik.on_callback_query(filters.regex(r"^pay_amt_(\d+)"))
 async def select_amount_callback(client, callback_query):
-    if not await enforce_subscription(client, message):
+    # TO'G'RILANDI: message o'rniga callback_query.message berildi
+    if not await enforce_subscription(client, callback_query.message):
         return
     amount = int(callback_query.data.split("_")[2])
     user_id = callback_query.from_user.id
@@ -44,7 +45,8 @@ async def select_amount_callback(client, callback_query):
 
 @bitik.on_callback_query(filters.regex(r"^method_clickterm_(\d+)"))
 async def click_terminal_payment(client, callback_query):
-    if not await enforce_subscription(client, message):
+    # TO'G'RILANDI: message o'rniga callback_query.message berildi
+    if not await enforce_subscription(client, callback_query.message):
         return
     amount = int(callback_query.data.split("_")[2])
     amount_tiyin = PaymentService.format_amount_to_tiyin(amount)
@@ -109,11 +111,9 @@ async def cancel_payment(client, callback_query):
 # Barcha raw update'larni to'g'ri va xavfsiz ushlash
 @bitik.on_raw_update()
 async def raw_updates_handler(client, update, users, chats):
-    # Faqat to'lovga aloqador update turlarini o'tkazib yuboramiz, qolganlarini to'sib qo'ymaymiz
     if not isinstance(update, (raw.types.UpdateBotPrecheckoutQuery, raw.types.UpdateNewMessage, raw.types.UpdateNewChannelMessage)):
         return
 
-    # 1. Pre-checkout so'rovini tasdiqlash
     if isinstance(update, raw.types.UpdateBotPrecheckoutQuery):
         await client.invoke(
             raw.functions.messages.SetBotPrecheckoutResults(
@@ -123,13 +123,11 @@ async def raw_updates_handler(client, update, users, chats):
         )
         return
     
-    # 2. Muvaffaqiyatli to'lovni (Service message) ushlash
     elif isinstance(update, (raw.types.UpdateNewMessage, raw.types.UpdateNewChannelMessage)):
         msg = update.message
         if not isinstance(msg, raw.types.MessageService) or not isinstance(msg.action, raw.types.MessageActionPaymentSentMe):
             return
 
-        # Foydalanuvchi ID sini aniqlash
         user_id = None
         if hasattr(msg.peer_id, "user_id"):
             user_id = msg.peer_id.user_id
@@ -143,10 +141,8 @@ async def raw_updates_handler(client, update, users, chats):
         amount_tiyin = msg.action.total_amount
         amount_uzs = amount_tiyin / 100
         
-        # Bazada balansni yangilash
         updated_balance = await PaymentService.process_successful_payment(user_id, amount_uzs)
         
-        # Invoys xabarini o'chirish
         if user_id in user_invoices:
             try:
                 await client.delete_messages(chat_id=user_id, message_ids=user_invoices[user_id])
@@ -154,7 +150,6 @@ async def raw_updates_handler(client, update, users, chats):
             except Exception as e:
                 print(f"Invoys xabarini o'chirishda xatolik: {e}")
         
-        # Tarjima matnlarini olish va xabar yuborish
         title_text = i18n.t("payment_success_title", lang=lang, file="message")
         added_text = i18n.t("payment_added", lang=lang, file="message")
         balance_text = i18n.t("payment_current_balance", lang=lang, file="message")
