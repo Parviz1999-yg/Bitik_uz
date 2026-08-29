@@ -72,7 +72,7 @@ async def admin_commands(client, message):
                 amount = row.get("amount")
                 date = row.get("created_at")
                 text += f"👤 Foydalanuvchi ID: <code>{tg_id}</code>\n"
-                text += f"💵 Summa: <b>{amount:,.0f} so'm</b>\n"
+                text += f"💵 Summa: <b>{amount:,.0f} (so'm)</b>\n"
                 text += f"📅 Vaqti: {date}\n"
                 text += "-------------------\n"
 
