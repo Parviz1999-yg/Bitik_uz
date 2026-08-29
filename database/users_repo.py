@@ -137,3 +137,28 @@ def get_all_users_count() -> int:
     finally:
         cursor.close()
         conn.close()
+
+def add_payment(tg_id: int, amount: float):
+    """Muvaffaqiyatli to'lovni payments jadvaliga yozib qo'yish"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO payments (tg_id, amount)
+            VALUES (%s, %s)
+        """, (tg_id, amount))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+def delete_user(tg_id: int):
+    """Botni bloklagan yoki o'chgan foydalanuvchini bazadan o'chirish"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE tg_id = %s", (tg_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()

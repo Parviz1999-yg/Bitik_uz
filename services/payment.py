@@ -1,5 +1,5 @@
 import config
-from database.users_repo import update_balance, get_user_balance
+from database.users_repo import update_balance, get_user_balance, add_payment
 
 class PaymentService:
     @staticmethod
@@ -27,13 +27,16 @@ class PaymentService:
     @staticmethod
     async def process_successful_payment(user_id: int, amount_uzs: float) -> float:
         """
-        To'lov muvaffaqiyatli bo'lganda bazadagi balansni yangilaydi 
-        va foydalanuvchining joriy umumiy balansini qaytaradi.
+        To'lov muvaffaqiyatli bo'lganda bazadagi balansni yangilaydi,
+        payments tarixiga yozadi va foydalanuvchining joriy umumiy balansini qaytaradi.
         """
         # Bazaga to'lov summasini qo'shish
         update_balance(user_id, amount_uzs)
         
-        # Yangi balansni bazadan o'qib olish[cite: 1]
+        # Payments tarixiga yozib qo'yish
+        add_payment(user_id, amount_uzs)
+        
+        # Yangi balansni bazadan o'qib olish
         current_balance = get_user_balance(user_id)
         
         return current_balance

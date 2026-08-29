@@ -6,7 +6,7 @@ from services.channel_service import enforce_subscription
 from services.localization import i18n
 from database.users_repo import set_admin, get_all_users_count, get_user_lang, get_connection
 
-@bitik.on_message(filters.command(["admin", "setadmin", "tolovlar"]))
+@bitik.on_message(filters.command(["admin", "setadmin", "tolovlar", "payments"]))
 async def admin_commands(client, message):
     if not await enforce_subscription(client, message):
         return
@@ -52,8 +52,6 @@ async def admin_commands(client, message):
             conn = get_connection()
             cursor = conn.cursor()
             
-            # Bazada to'lovlar saqlanadigan jadval (masalan: payments yoki transactions)
-            # Agar jadval nomi boshqacha bo'lsa, quyidagi so'rovni o'zingizga moslang
             cursor.execute("""
                 SELECT tg_id, amount, created_at 
                 FROM payments 
