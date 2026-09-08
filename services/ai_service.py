@@ -21,7 +21,7 @@ def init_ai_chat(user_id: int, lang: str = "uz"):
     system_instruction = AI_LANG_INSTRUCTIONS.get(lang, AI_LANG_INSTRUCTIONS["uz"])
     
     user_chats[user_id] = client_ai.chats.create(
-        model='gemini-3.1-flash-lite'
+        model='gemini-3.1-flash-lite',
         config=types.GenerateContentConfig(  # <--- Shu yerda model='...' dan keyin vergul bo'lishi shart!
             system_instruction=system_instruction
         )
