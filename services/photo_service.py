@@ -7,7 +7,7 @@ import os
 def crop_image_3x4(input_path: str) -> str:
     target_w = 350
     target_h = 450
-    target_ratio = 3.5 / 4.5  # 3x4 pasport proporsiyasi
+    target_ratio = 3.5 / 4.5  # 3.5x4.5 pasport proporsiyasi
 
     img = cv2.imread(input_path)
     if img is None:
@@ -21,8 +21,8 @@ def crop_image_3x4(input_path: str) -> str:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         if os.path.exists(cascade_path):
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            # Yuzni aniqlash parametrlarini yanada aniqroq qilamiz
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=5, minSize=(30, 30))
+            # Yuzni aniqlash aniqligini oshiramiz
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=6, minSize=(40, 40))
     except Exception as e:
         print(f"Yuzni aniqlashda ogohlantirish: {e}")
 
@@ -32,36 +32,32 @@ def crop_image_3x4(input_path: str) -> str:
         # Eng yirik yuzni tanlab olamiz
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
         
-        # PASPORT STANDARTI BO'YICHA IDEAL PROPORSiya (Photoshop usuli):
-        # Yuz kadr balandligining taxminan 40-45% ini tashkil qilishi va markazda bo'lishi kerak.
-        # Boshning tepasi (peshona usti) uchun yuqoridan ko'proq joy qoldiramiz (0.65 koeffitsiyent).
+        # PROFESSIONAL PASPORT STANDARTI (Ko'z va bosh proporsiyasi):
+        # Haarcascade yuzni (peshonadan iyakgacha) aniqlaydi. 
+        # Ko'zlar taxminan yuz yuqorisidan 35-40% pastda joylashadi.
         face_center_x = x + w // 2
+        face_center_y = y + int(h * 0.4)  # Taxminiy ko'zlar/markaziy qism chizig'i
         
-        # Kadrning umumiy balandligini yuz o'lchamiga nisbatan hisoblaymiz
-        box_h = int(h * 2.7) 
+        # Kadr balandligini yuz hajmiga nisbatan tanlaymiz (3.0 koeffitsiyent yelka va bosh uchun ideal)
+        box_h = int(h * 3.0)
         box_w = int(box_h * target_ratio)
         
-        # Yuz kadrning yuqori qismidan pastroqda (taxminan 35% pastda) joylashadi
-        y1 = y - int(h * 0.65)  
+        # Ko'zlar kadrning tepadan pastga qarab 38% qismida turishi uchun y1 ni hisoblaymiz
+        y1 = face_center_y - int(box_h * 0.38)
         x1 = face_center_x - box_w // 2
         x2 = x1 + box_w
         y2 = y1 + box_h
-        
-        # Chegaralar rasm hajmidan chiqib ketishini oldini olamiz va ularni siljitamiz (padding safety)
+            
+        # Chegaralar rasm hajmidan chiqib ketishining oldini olish (Padding Safety & Shift)
         dx1 = max(0, -x1)
         dy1 = max(0, -y1)
         dx2 = max(0, x2 - img_w)
         dy2 = max(0, y2 - img_h)
         
-        x1 += dx1
-        x2 += dx1
-        y1 += dy1
-        y2 += dy1
-        
-        x1 -= dx2
-        x2 -= dx2
-        y1 -= dy2
-        y2 -= dy2
+        x1 += dx1 - dx2
+        x2 += dx1 - dx2
+        y1 += dy1 - dy2
+        y2 += dy1 - dy2
         
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(img_w, x2), min(img_h, y2)
@@ -69,7 +65,7 @@ def crop_image_3x4(input_path: str) -> str:
         if x2 > x1 and y2 > y1:
             cropped = img[y1:y2, x1:x2]
 
-    # Agar yuz aniqlanmasa, rasmning markazidan to'g'ridan-to'g'ri 3x4 proporsiyada qirqib olamiz
+    # Agar yuz aniqlanmasa, rasmning markazidan proporsional kesib olamiz
     if cropped is None or cropped.size == 0:
         current_ratio = img_w / img_h
         if current_ratio > target_ratio:
@@ -84,11 +80,13 @@ def crop_image_3x4(input_path: str) -> str:
     if cropped is None or cropped.size == 0:
         return input_path
 
-    # Yuqori sifatli interpolyatsiya (CUBIC) yordamida aniq 350x450 o'lchamga keltiramiz
-    cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
+    # Maksimal sifatni saqlab qolish uchun LANCZOS4 interpolyatsiyasidan foydalanamiz
+    cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4)
 
     output_path = input_path.replace(".", "_cropped.")
-    cv2.imwrite(output_path, cropped)
+    
+    # JPEG sifatini 100% qilib saqlaymiz (xiralashishni oldini oladi)
+    cv2.imwrite(output_path, cropped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
     return output_path
 
@@ -108,10 +106,8 @@ async def process_user_photo(client, message):
             print(f"Rasm kesish funksiyasida xato: {e}")
             target_path = photo_path
 
-        # Rasm yo'lini FSM ga saqlaymiz (docx, pdf va preview uchun)[cite: 7]
         fsm.update_data(user_id, "rasm", target_path)
         
-        # State ni tozalaymiz va Preview ga o'tamiz[cite: 7]
         fsm.set_state(user_id, None)
         await send_cv_preview(client, message, user_id, lang)
         
