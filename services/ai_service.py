@@ -4,6 +4,8 @@ from config import GEMINI_KEY
 
 client_ai = genai.Client(api_key=GEMINI_KEY)
 
+# Har bir foydalanuvchining oxirgi ishlatgan tilini saqlab turish uchun lUG'AT
+user_languages = {}
 user_chats = {}
 
 AI_LANG_INSTRUCTIONS = {
@@ -14,10 +16,12 @@ AI_LANG_INSTRUCTIONS = {
 }
 
 def init_ai_chat(user_id: int, lang: str = "uz"):
-    """Foydalanuvchi uchun AI chat sessiyasini boshlab beradi (faollashtiradi)."""
+    """Foydalanuvchi uchun AI chat sessiyasini ko'rsatilgan til bo'yicha boshlab beradi."""
+    user_languages[user_id] = lang
     system_instruction = AI_LANG_INSTRUCTIONS.get(lang, AI_LANG_INSTRUCTIONS["uz"])
+    
     user_chats[user_id] = client_ai.chats.create(
-        model='gemini-3.1-flash-lite',
+        model='gemini-3.1-flash-lite'
         config=types.GenerateContentConfig(
             system_instruction=system_instruction
         )
@@ -25,8 +29,8 @@ def init_ai_chat(user_id: int, lang: str = "uz"):
 
 def get_ai_response(user_id: int, text: str, lang: str = "uz") -> str:
     try:
-        # Agar qandaydir sabab bilan sessiya yo'q bo'lsa, qaytatan ochamiz
-        if user_id not in user_chats:
+        # Agar foydalanuvchi tili o'zgargan bo'lsa, chatni o'sha tilga moslab qaytadan ochamiz
+        if user_id not in user_chats or user_languages.get(user_id) != lang:
             init_ai_chat(user_id, lang)
         
         chat = user_chats[user_id]
@@ -35,8 +39,13 @@ def get_ai_response(user_id: int, text: str, lang: str = "uz") -> str:
         
     except Exception as e:
         reset_ai_chat(user_id)
-        raise e
+        # Xatolik bo'lsa qaytadan urinib ko'ramiz
+        init_ai_chat(user_id, lang)
+        response = user_chats[user_id].send_message(text)
+        return response.text
 
 def reset_ai_chat(user_id: int):
     if user_id in user_chats:
         del user_chats[user_id]
+    if user_id in user_languages:
+        del user_languages[user_id]

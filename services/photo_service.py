@@ -21,7 +21,6 @@ def crop_image_3x4(input_path: str) -> str:
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         if os.path.exists(cascade_path):
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            # Yuzni aniqlash aniqligini oshiramiz
             faces = face_cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=6, minSize=(40, 40))
     except Exception as e:
         print(f"Yuzni aniqlashda ogohlantirish: {e}")
@@ -32,23 +31,20 @@ def crop_image_3x4(input_path: str) -> str:
         # Eng yirik yuzni tanlab olamiz
         x, y, w, h = sorted(faces, key=lambda f: f[2]*f[3], reverse=True)[0]
         
-        # PROFESSIONAL PASPORT STANDARTI (Ko'z va bosh proporsiyasi):
-        # Haarcascade yuzni (peshonadan iyakgacha) aniqlaydi. 
-        # Ko'zlar taxminan yuz yuqorisidan 35-40% pastda joylashadi.
-        face_center_x = x + w // 2
-        face_center_y = y + int(h * 0.4)  # Taxminiy ko'zlar/markaziy qism chizig'i
-        
-        # Kadr balandligini yuz hajmiga nisbatan tanlaymiz (3.0 koeffitsiyent yelka va bosh uchun ideal)
-        box_h = int(h * 3.0)
+        # PROFESSIONAL PASPORT STANDARTI (Photoshop usuli):
+        # Kadrni ixchamlashtiramiz (2.4 koeffitsiyent yelka va ko'krakni to'g'ri kesib, ortiqcha chetlarni olib tashlaydi)
+        box_h = int(h * 2.4)
         box_w = int(box_h * target_ratio)
         
-        # Ko'zlar kadrning tepadan pastga qarab 38% qismida turishi uchun y1 ni hisoblaymiz
-        y1 = face_center_y - int(box_h * 0.38)
+        face_center_x = x + w // 2
+        
+        # Boshning tepasi kesilib ketmasligi uchun yuqoridan qismni qisqaroq (0.55) olamiz
+        y1 = y - int(h * 0.55)
         x1 = face_center_x - box_w // 2
         x2 = x1 + box_w
         y2 = y1 + box_h
             
-        # Chegaralar rasm hajmidan chiqib ketishining oldini olish (Padding Safety & Shift)
+        # Chegaralar rasm hajmidan chiqib ketishining oldini olish
         dx1 = max(0, -x1)
         dy1 = max(0, -y1)
         dx2 = max(0, x2 - img_w)
@@ -85,7 +81,7 @@ def crop_image_3x4(input_path: str) -> str:
 
     output_path = input_path.replace(".", "_cropped.")
     
-    # JPEG sifatini 100% qilib saqlaymiz (xiralashishni oldini oladi)
+    # JPEG sifatini 100% qilib saqlaymiz
     cv2.imwrite(output_path, cropped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
     return output_path

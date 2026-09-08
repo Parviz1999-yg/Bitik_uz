@@ -2,28 +2,26 @@ import os
 import subprocess
 import asyncio
 from google import genai
+from google.genai import types
 from config import GEMINI_KEY
 from database.db import get_connection
-from database.users_repo import get_user_lang  
+from database.users_repo import get_user_lang   
 from services.localization import i18n        
 
 client_ai = genai.Client(api_key=GEMINI_KEY)
 
 def get_current_commit():
     """Railway va Git muhitidan versiyani aniqlash (Xavfsiz versiya)"""
-    # 1. Railway'ning o'zining deploy ID si (har bir deployda 100% o'zgaradi)
     railway_deploy_id = os.getenv("RAILWAY_DEPLOYMENT_ID")
     if railway_deploy_id:
         print(f"[INFO] Railway Deployment ID topildi: {railway_deploy_id}")
         return railway_deploy_id
 
-    # 2. Railway Git Commit SHA
     railway_commit = os.getenv("RAILWAY_GIT_COMMIT_SHA")
     if railway_commit:
         print(f"[INFO] Railway Git Commit topildi: {railway_commit}")
         return railway_commit
 
-    # 3. Agar local kompyuterda bo'lsa Git orqali
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode("ascii").strip()
         if commit:
@@ -31,12 +29,10 @@ def get_current_commit():
     except Exception:
         pass
 
-    # 4. Agar umuman topilmasa, vaqtinchalik unikal identifikator qaytaramiz (kod to'xtab qolmasligi uchun)
     print("[OGOHLANTIRISH] Git yoki Railway versiyasi topilmadi, zaxira versiyadan foydalanilmoqda.")
     return "railway_auto_version_1"
 
 def get_commit_message():
-    # Railway o'зи yuboradigan commit xabarini o'qiymiz
     railway_msg = os.getenv("RAILWAY_GIT_COMMIT_MESSAGE")
     if railway_msg:
         return railway_msg
@@ -60,7 +56,10 @@ def translate_text(text: str, target_lang: str) -> str:
     try:
         response = client_ai.models.generate_content(
             model='gemini-3.1-flash-lite',
-            contents=f"Translate this update changelog into {target}. Keep it natural and concise: {text}"
+            contents=f"Translate this update changelog into {target}. Keep it natural and concise: {text}",
+            config=types.GenerateContentConfig(
+                system_instruction="You are a strict translation engine. Output ONLY the translated text without any conversational filler, introductory remarks, notes, or explanations."
+            )
         )
         return response.text.strip()
     except Exception:
@@ -77,6 +76,20 @@ def get_all_user_ids():
         cursor.close()
         conn.close()
 
+def remove_inactive_user(user_id: int):
+    """Botni bloklagan yoki o'chirgan foydalanuvchini bazadan o'chiradi"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE tg_id = ?", (user_id,))
+        conn.commit()
+        print(f"[INFO] Faol bo'lmagan foydalanuvchi bazadan o'chirildi: {user_id}")
+    except Exception as e:
+        print(f"[XATO] Foydalanuvchini o'chirishda xatolik ({user_id}): {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
 async def check_and_notify_users(client):
     current_commit = get_current_commit()
     version_file = "last_commit.txt"
@@ -88,7 +101,6 @@ async def check_and_notify_users(client):
 
     print(f"Joriy versiya/commit: {current_commit} | Fayldagi eskisi: {last_commit}")
 
-    # Agar versiyalar har xil bo'lsa
     if current_commit != last_commit:
         user_ids = get_all_user_ids()
         if not user_ids:
@@ -116,11 +128,15 @@ async def check_and_notify_users(client):
                 await client.send_message(user_id, update_text)
                 await asyncio.sleep(0.05) 
             except Exception as e:
-                print(f"Xatolik userlarga yuborishda: {e}")
+                err_str = str(e).lower()
+                # Agar foydalanuvchi botni bloklagan yoki chat topilmasa, bazadan o'chiramiz
+                if "blocked" in err_str or "deactivated" in err_str or "peer id invalid" in err_str or "bot was blocked" in err_str:
+                    remove_inactive_user(user_id)
+                else:
+                    print(f"Xatolik userlarga yuborishda ({user_id}): {e}")
 
-        # Yangi versiyani yozib qo'yamiz
         with open(version_file, "w") as f:
             f.write(current_commit)
-        print("Barcha foydalanuvchilarga yangilik yuborildi!")
+        print("Barcha foydalanuvchilarga yangilik yuborildi va baz tozalandi!")
     else:
         print("Yangi versiya aniqlanmadi, xabar yuborilmadi.")
