@@ -22,7 +22,7 @@ def init_ai_chat(user_id: int, lang: str = "uz"):
     
     user_chats[user_id] = client_ai.chats.create(
         model='gemini-3.1-flash-lite'
-        config=types.GenerateContentConfig(
+        config=types.GenerateContentConfig(  # <--- Shu yerda model='...' dan keyin vergul bo'lishi shart!
             system_instruction=system_instruction
         )
     )
