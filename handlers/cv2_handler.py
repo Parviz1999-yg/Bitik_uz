@@ -1,26 +1,18 @@
-# handlers/cv2_handler.py
 import os
 from pyrogram import filters
 from pyrogram.errors import MessageNotModified
 from bot import bitik
-import config
 from services.cv2_fsm import anketa2_fsm, Anketa2State
-from keyboards.cv2_kb import anketa2_lang_keyboard
 from keyboards.cv2_xato_kb import cv2_xato_keyboard
 from keyboards.cv2_davom_kb import get_cv2_davom_keyboard
-from keyboards.payment_kb import get_amounts_keyboard
 from services.doc2_service import create_cv2_document
 from services.pdf2_service import generate_pdf2_anketa
 from services.localization import i18n
-from callbacks.format2_cb import universal_format2_callback
+from callbacks.format_cb import universal_format_callback
 from services.channel_service import enforce_subscription
-from database.users_repo import get_user_lang, get_user_balance
-
-CV_PRICE = getattr(config, "CV_PRICE", 5000)
-
-
-def _is_admin(user_id: int) -> bool:
-    return bool(config.ADMIN_ID) and user_id == config.ADMIN_ID
+from database.users_repo import get_user_lang
+from core.admin import effective_balance
+from services.billing import CV_PRICE
 
 
 async def process_cv2_start(client, message):
@@ -29,31 +21,21 @@ async def process_cv2_start(client, message):
 
     user_id = message.from_user.id
     anketa2_fsm.finish(user_id)
-
     lang = get_user_lang(user_id)
-
-    # Admin — cheksiz balans (bepul)
-    if _is_admin(user_id):
-        balance = 999999999.0
-    else:
-        balance = get_user_balance(user_id)
+    balance = effective_balance(user_id)
 
     anketa2_fsm.update_data(user_id, "cv_lang", lang)
     anketa2_fsm.update_data(user_id, "waiting_for_format", False)
 
     try:
-        price_text_template = i18n.t("cv2_price_info", lang=lang, file="cv")
+        price_tpl = i18n.t("cv2_price_info", lang=lang, file="cv")
     except Exception:
         try:
-            price_text_template = i18n.t("cv2_price_info", lang=lang, file="anketa2")
+            price_tpl = i18n.t("cv2_price_info", lang=lang, file="anketa2")
         except Exception:
-            price_text_template = "📄 Hujjat yaratish narxi: {price}\n💰 Sizning balansingiz: {balance}"
+            price_tpl = "📄 Hujjat yaratish narxi: {price}\n💰 Sizning balansingiz: {balance}"
 
-    text = price_text_template.format(
-        price=f"{CV_PRICE:,.0f}",
-        balance=f"{balance:,.0f}",
-    )
-
+    text = price_tpl.format(price=f"{CV_PRICE:,.0f}", balance=f"{balance:,.0f}")
     await message.reply(text, reply_markup=get_cv2_davom_keyboard(lang))
 
 
@@ -66,37 +48,27 @@ async def start_anketa2(client, message):
 async def set_cv2_lang(client, callback):
     user_id = callback.from_user.id
     lang = callback.data.split(":")[-1]
-
-    anketa2_fsm.update_data(user_id, "cv_lang", lang)
-    anketa2_fsm.update_data(user_id, "waiting_for_format", False)
-
-    flow = anketa2_fsm.QUESTIONS_FLOW
-    if not flow:
+    first = anketa2_fsm.start_flow(user_id, lang)
+    if not first:
         return
-
-    first_state = flow[0]
-    anketa2_fsm.set_state(user_id, first_state)
-
     try:
         await callback.message.edit_text(i18n.t("cv_starting", lang=lang, file="message"))
     except MessageNotModified:
         pass
-
     try:
-        question_text = i18n.t(anketa2_fsm.get_question_key(first_state), lang=lang, file="anketa2")
+        q = i18n.t(anketa2_fsm.get_question_key(first), lang=lang, file="anketa2")
     except Exception:
-        question_text = "Keyingi savol:"
-
-    await callback.message.reply(question_text)
+        q = "Keyingi savol:"
+    await callback.message.reply(q)
     await callback.answer()
 
 
 async def check_cv2_filter(_, __, message):
     if not message or not message.from_user:
         return False
-    user_id = message.from_user.id
-    state = anketa2_fsm.get_state(user_id)
-    data = anketa2_fsm.get_data(user_id) or {}
+    uid = message.from_user.id
+    state = anketa2_fsm.get_state(uid)
+    data = anketa2_fsm.get_data(uid) or {}
     return state is not None or data.get("waiting_for_format") is True
 
 
@@ -106,43 +78,33 @@ anketa2_filter = cv2_filter
 
 async def send_cv2_preview(client, message, user_id, lang):
     data = anketa2_fsm.get_data(user_id) or {}
-
     try:
         preview_title = i18n.t("preview_title", lang=lang, file="anketa2")
     except Exception:
         preview_title = "📋 Ma'lumotlarni tekshiring:"
 
-    text_lines = [f"<b>{preview_title}</b>\n"]
-
+    lines = [f"<b>{preview_title}</b>\n"]
     for index, state in enumerate(anketa2_fsm.QUESTIONS_FLOW, start=1):
-        question_key = anketa2_fsm.get_question_key(state)
         try:
-            question_title = i18n.t(question_key, lang=lang, file="anketa2")
+            q_title = i18n.t(anketa2_fsm.get_question_key(state), lang=lang, file="anketa2")
         except Exception:
-            question_title = state
-
-        user_value = data.get(state, "-")
-        text_lines.append(f"{index}. {question_title}: {user_value}")
-
-    text = "\n".join(text_lines)
+            q_title = state
+        lines.append(f"{index}. {q_title}: {data.get(state, '-')}")
 
     try:
-        btn_confirm = i18n.t("btn_confirm", lang=lang, file="anketa2")
+        btn_c = i18n.t("btn_confirm", lang=lang, file="anketa2")
     except Exception:
-        btn_confirm = "✅ Tasdiqlash"
-
+        btn_c = "✅ Tasdiqlash"
     try:
-        btn_edit = i18n.t("btn_edit", lang=lang, file="anketa2")
+        btn_e = i18n.t("btn_edit", lang=lang, file="anketa2")
     except Exception:
-        btn_edit = "✏️ O'zgartirish"
+        btn_e = "✏️ O'zgartirish"
 
-    keyboard = cv2_xato_keyboard(btn_confirm, btn_edit)
-
+    kb = cv2_xato_keyboard(btn_c, btn_e)
     photo_path = data.get("rasm")
     if photo_path and isinstance(photo_path, str) and os.path.exists(photo_path):
         await client.send_photo(chat_id=message.chat.id, photo=photo_path)
-
-    await message.reply(text, reply_markup=keyboard)
+    await message.reply("\n".join(lines), reply_markup=kb)
 
 
 @bitik.on_message(
@@ -158,52 +120,40 @@ async def handle_cv2_inputs(client, message):
 
     if data.get("waiting_for_format"):
         try:
-            warning_msg = i18n.t("warning_choose_format", lang=lang, file="anketa2")
+            w = i18n.t("warning_choose_format", lang=lang, file="anketa2")
         except Exception:
-            warning_msg = "Iltimos, formatni tanlang!"
-        await message.reply(warning_msg)
+            w = "Iltimos, formatni tanlang!"
+        await message.reply(w)
         return
 
-    flow = anketa2_fsm.QUESTIONS_FLOW
-    if state in flow:
+    if state in anketa2_fsm.QUESTIONS_FLOW:
         if not message.text:
             try:
-                warning_msg = i18n.t("warning_text_required", lang=lang, file="anketa2")
+                w = i18n.t("warning_text_required", lang=lang, file="anketa2")
             except Exception:
-                warning_msg = "Iltimos, matn ko'rinishida kiriting!"
-            await message.reply(warning_msg)
+                w = "Iltimos, matn ko'rinishida kiriting!"
+            await message.reply(w)
             return
 
-        current_index = flow.index(state)
-        next_index = current_index + 1
-
-        anketa2_fsm.update_data(user_id, state, message.text)
-
-        if next_index < len(flow):
-            next_state = flow[next_index]
-            anketa2_fsm.set_state(user_id, next_state)
-
-            key = anketa2_fsm.get_question_key(next_state)
+        next_state = anketa2_fsm.process_answer(user_id, message.text)
+        if next_state:
             try:
-                next_q_text = i18n.t(key, lang=lang, file="anketa2")
+                q = i18n.t(anketa2_fsm.get_question_key(next_state), lang=lang, file="anketa2")
             except Exception:
-                next_q_text = "Keyingi ma'lumotni kiriting:"
-            await message.reply(next_q_text)
+                q = "Keyingi ma'lumotni kiriting:"
+            await message.reply(q)
         else:
             anketa2_fsm.set_state(user_id, Anketa2State.RASM)
-            ask_rasm_key = f"ask_{Anketa2State.RASM}"
-
             try:
-                ask_rasm_text = i18n.t(ask_rasm_key, lang=lang, file="anketa2")
+                ask = i18n.t(f"ask_{Anketa2State.RASM}", lang=lang, file="anketa2")
             except Exception:
-                ask_rasm_text = "Iltimos, rasmingizni yuboring:"
-
-            await message.reply(ask_rasm_text)
+                ask = "Iltimos, rasmingizni yuboring:"
+            await message.reply(ask)
 
 
 @bitik.on_callback_query(filters.regex(r"^anketa2_format_(pdf|docx)$"))
 async def format_cv2_callback(client, callback):
-    await universal_format2_callback(
+    await universal_format_callback(
         client=client,
         callback=callback,
         prefix="cv2",

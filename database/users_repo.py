@@ -1,23 +1,25 @@
+from typing import Optional
 from database.db import get_connection
 
 
 def add_user(user):
-    """Yangi foydalanuvchini bazaga qo'shish va faolligini yangilash"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO users (tg_id, username, first_name, last_name)
             VALUES (%s, %s, %s, %s)
             ON CONFLICT (tg_id) DO NOTHING
-        """, (user.id, user.username, user.first_name, user.last_name))
-
-        cursor.execute("""
-            UPDATE users
-            SET last_activity = CURRENT_TIMESTAMP
-            WHERE tg_id = %s
-        """, (user.id,))
-
+            """,
+            (user.id, user.username, user.first_name, user.last_name),
+        )
+        cursor.execute(
+            """
+            UPDATE users SET last_activity = CURRENT_TIMESTAMP WHERE tg_id = %s
+            """,
+            (user.id,),
+        )
         conn.commit()
     finally:
         cursor.close()
@@ -25,15 +27,17 @@ def add_user(user):
 
 
 def update_user_lang(tg_id: int, lang: str):
-    """Foydalanuvchi tilini va updated_at/last_activity vaqtlarini yangilash"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE users
             SET language = %s, updated_at = CURRENT_TIMESTAMP, last_activity = CURRENT_TIMESTAMP
             WHERE tg_id = %s
-        """, (lang, tg_id))
+            """,
+            (lang, tg_id),
+        )
         conn.commit()
     finally:
         cursor.close()
@@ -41,7 +45,6 @@ def update_user_lang(tg_id: int, lang: str):
 
 
 def get_user_lang(tg_id: int) -> str:
-    """Foydalanuvchi tilini bazadan olish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -54,15 +57,17 @@ def get_user_lang(tg_id: int) -> str:
 
 
 def add_points(tg_id: int, count: int = 5):
-    """Foydalanuvchiga ball qo'shish va faollikni yangilash"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE users
             SET points = points + %s, last_activity = CURRENT_TIMESTAMP
             WHERE tg_id = %s
-        """, (count, tg_id))
+            """,
+            (count, tg_id),
+        )
         conn.commit()
     finally:
         cursor.close()
@@ -70,16 +75,16 @@ def add_points(tg_id: int, count: int = 5):
 
 
 def get_top_users(limit: int = 10):
-    """Eng ko'p ball to'plagan top foydalanuvchilar ro'yxati"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT tg_id, username, first_name, points
-            FROM users
-            ORDER BY points DESC
-            LIMIT %s
-        """, (limit,))
+            FROM users ORDER BY points DESC LIMIT %s
+            """,
+            (limit,),
+        )
         return cursor.fetchall()
     finally:
         cursor.close()
@@ -87,7 +92,6 @@ def get_top_users(limit: int = 10):
 
 
 def get_user_balance(tg_id: int) -> float:
-    """Foydalanuvchi balansini olish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -100,51 +104,48 @@ def get_user_balance(tg_id: int) -> float:
 
 
 def update_balance(tg_id: int, amount: float):
-    """Foydalanuvchi balansini o'zgartirish (qo'shish yoki ayirish uchun minus qiymat berish mumkin)"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE users
             SET balance = balance + %s, last_activity = CURRENT_TIMESTAMP
             WHERE tg_id = %s
-        """, (amount, tg_id))
+            """,
+            (amount, tg_id),
+        )
         conn.commit()
     finally:
         cursor.close()
         conn.close()
 
 
-def deduct_balance(tg_id: int, amount: float) -> float | None:
-    """
-    Atomic balans yechish.
-    Muvaffaqiyatli bo'lsa yangi balansni qaytaradi, yetarli bo'lmasa None.
-    Race condition oldini oladi (WHERE balance >= amount).
-    """
+def deduct_balance(tg_id: int, amount: float) -> Optional[float]:
+    """Atomic yechish. Muvaffaqiyatda yangi balans, aks holda None."""
     if amount <= 0:
         return get_user_balance(tg_id)
-
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE users
             SET balance = balance - %s, last_activity = CURRENT_TIMESTAMP
             WHERE tg_id = %s AND balance >= %s
             RETURNING balance
-        """, (amount, tg_id, amount))
+            """,
+            (amount, tg_id, amount),
+        )
         row = cursor.fetchone()
         conn.commit()
-        if row:
-            return float(row["balance"])
-        return None
+        return float(row["balance"]) if row else None
     finally:
         cursor.close()
         conn.close()
 
 
 def get_user_points(tg_id: int) -> int:
-    """Foydalanuvchining joriy ballarini olish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -157,7 +158,6 @@ def get_user_points(tg_id: int) -> int:
 
 
 def set_admin(tg_id: int):
-    """Foydalanuvchiga adminlik huquqini berish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -169,7 +169,6 @@ def set_admin(tg_id: int):
 
 
 def get_all_users_count() -> int:
-    """Bazadagi jami foydalanuvchilar sonini qaytarish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -184,14 +183,13 @@ def get_all_users_count() -> int:
 
 
 def add_payment(tg_id: int, amount: float):
-    """Muvaffaqiyatli to'lovni payments jadvaliga yozib qo'yish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
-            INSERT INTO payments (tg_id, amount)
-            VALUES (%s, %s)
-        """, (tg_id, amount))
+        cursor.execute(
+            "INSERT INTO payments (tg_id, amount) VALUES (%s, %s)",
+            (tg_id, amount),
+        )
         conn.commit()
     finally:
         cursor.close()
@@ -199,7 +197,6 @@ def add_payment(tg_id: int, amount: float):
 
 
 def delete_user(tg_id: int):
-    """Botni bloklagan yoki o'chgan foydalanuvchini bazadan o'chirish"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
