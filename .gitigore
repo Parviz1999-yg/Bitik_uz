@@ -1,4 +1,0 @@
-config.py
-database/db.py
-__pycache__/
-.env
