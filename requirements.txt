@@ -3,8 +3,10 @@ tgcrypto
 docxtpl
 pdfkit
 google-genai
-fastapi
-uvicorn
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
 opencv-python-headless>=4.5.0
 psycopg2-binary
 xhtml2pdf
+reportlab>=4.0.0
+python-multipart>=0.0.9
